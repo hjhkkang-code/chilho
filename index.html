@@ -1,0 +1,1857 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>칠호 투자노트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@400;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+  /* 칠호 투자노트 정적판: 대시보드 토큰을 같은 이름으로 정의해 본문(site/index.html)을 그대로 쓴다 */
+  :root {
+    --color-bg: #f5f5f2;
+    --color-panel: #ffffff;
+    --color-fg: #1c1d1f;
+    --color-fg-muted: #63656a;
+    --color-border-line: #e2e2dd;
+    --color-ok: #1d7a4c;
+    --color-warn: #9a5c00;
+    --color-bad: #c9302a;
+    --cds-chart-muted: #c8c9c4;
+    --cds-chart-grid: #ebebe7;
+    --cds-chart-axis: #b6b7b2;
+    --cds-chart-reference: #8c8d88;
+    --cds-surface-popover: #ffffff;
+    --cds-border: #dadad5;
+    --cds-shadow-popover: 0 6px 18px rgba(20, 22, 26, 0.14);
+    --cds-text-secondary: #63656a;
+    --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 14px; --cds-gap-lg: 22px; --cds-gap-xl: 32px;
+    --cds-pad-xs: 4px; --cds-pad-sm: 8px; --cds-pad-md: 12px; --cds-pad-lg: 18px; --cds-pad-xl: 28px;
+    --cds-radius: 8px;
+    --cds-font-size-caption: 0.8125rem; --cds-font-size-body: 0.9375rem; --cds-font-size-heading: 1.0625rem; --cds-font-size-title: 1.75rem;
+    --cds-font-weight-medium: 600;
+    --cds-dur-slow: 240ms;
+    --font-anthropic-sans: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    --font-anthropic-serif: "Noto Serif KR", "AppleMyungjo", "Batang", Georgia, serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --color-bg: #141517; --color-panel: #1d1f22; --color-fg: #e9e9e6; --color-fg-muted: #a1a3a8;
+      --color-border-line: #303236; --color-ok: #5cc28d; --color-warn: #e0a447; --color-bad: #f0655d;
+      --cds-chart-muted: #4a4d52; --cds-chart-grid: #26282c; --cds-chart-axis: #4f5257; --cds-chart-reference: #8a8d92;
+      --cds-surface-popover: #24272b; --cds-border: #3a3d42; --cds-shadow-popover: 0 6px 18px rgba(0, 0, 0, 0.5);
+      --cds-text-secondary: #a1a3a8; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --color-bg: #141517; --color-panel: #1d1f22; --color-fg: #e9e9e6; --color-fg-muted: #a1a3a8;
+    --color-border-line: #303236; --color-ok: #5cc28d; --color-warn: #e0a447; --color-bad: #f0655d;
+    --cds-chart-muted: #4a4d52; --cds-chart-grid: #26282c; --cds-chart-axis: #4f5257; --cds-chart-reference: #8a8d92;
+    --cds-surface-popover: #24272b; --cds-border: #3a3d42; --cds-shadow-popover: 0 6px 18px rgba(0, 0, 0, 0.5);
+    --cds-text-secondary: #a1a3a8; color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; }
+  body { background: var(--color-bg); color: var(--color-fg); font-family: var(--font-anthropic-sans); font-size: 15px; -webkit-text-size-adjust: 100%; }
+  #dash-root {
+    max-width: 1180px; margin: 0 auto; box-sizing: border-box;
+    padding-block: max(20px, env(safe-area-inset-top, 0px)) 40px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  #dash-root :is(b, strong) { font-weight: 700; }
+  .dash-skeleton { color: transparent !important; background: var(--color-border-line); border-radius: 4px; }
+  .sf-foot {
+    max-width: 1180px; margin: 0 auto; box-sizing: border-box; display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+    padding-block: 0 max(28px, env(safe-area-inset-bottom, 0px));
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+    color: var(--color-fg-muted); font-size: var(--cds-font-size-caption);
+  }
+  .sf-btn {
+    font: inherit; color: var(--color-fg); background: var(--color-panel); border: 1px solid var(--color-border-line);
+    border-radius: var(--cds-radius); padding: 6px 12px; cursor: pointer;
+  }
+  .sf-btn:focus-visible, .sf-input:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
+  .sf-gate {
+    position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: var(--color-bg);
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .sf-gate-box {
+    width: min(100%, 360px); display: grid; gap: 12px; background: var(--color-panel); border: 1px solid var(--color-border-line);
+    border-radius: 12px; padding: 24px;
+  }
+  .sf-gate-box h1 { margin: 0; font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 1.6rem; }
+  .sf-gate-box p { margin: 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-body); line-height: 1.5; }
+  .sf-input {
+    font: inherit; font-size: 16px; color: var(--color-fg); background: var(--color-bg); border: 1px solid var(--color-border-line);
+    border-radius: var(--cds-radius); padding: 10px 12px; width: 100%; box-sizing: border-box;
+  }
+  .sf-msg { min-height: 1.4em; font-size: var(--cds-font-size-caption); color: var(--color-bad) !important; }
+  body.sf-locked #dash-root, body.sf-locked .sf-foot { visibility: hidden; }
+</style>
+<script>
+  // 대시보드의 dash API를 흉내 내는 작은 연결부 (본문 스크립트보다 먼저 정의)
+  window.dash = (() => {
+    const store = {};
+    const LAZY = new Set(['charts']);   // 차트 탭을 처음 열 때 받는다
+    const requested = new Set();
+    const draws = new Map();
+    const listeners = [];
+    const defaults = { fsort: 'order', doc: null, month: null };
+    let params = { ...defaults };
+    const shown = (el) => !el.closest('[hidden]');
+    const run = (name) => {
+      const fn = draws.get(name);
+      if (!fn) return;
+      document.querySelectorAll('[data-draw="' + name + '"]').forEach((el) => {
+        if (!shown(el)) return;
+        try { fn(el); } catch (e) { console.error('draw ' + name, e); }
+      });
+    };
+    const runAll = () => {
+      listeners.forEach((f) => { try { f(); } catch (e) { console.error(e); } });
+      draws.forEach((_, n) => run(n));
+    };
+    return {
+      data: (id) => {
+        if (!store[id] && LAZY.has(id) && window.__chilhoLoad && !requested.has(id)) {
+          requested.add(id);
+          window.__chilhoLoad(id);
+        }
+        return store[id] || { status: 'loading', data: [], columns: [] };
+      },
+      draw: (name, fn) => { if (typeof fn === 'function') draws.set(name, fn); run(name); },
+      onData: (fn) => { listeners.push(fn); try { fn(); } catch (e) { console.error(e); } },
+      params: () => ({ ...params }),
+      setParams: (p) => { params = { ...params, ...p }; runAll(); },
+      resetParams: () => { params = { ...defaults }; runAll(); },
+      setLink: (name) => { try { history.replaceState(null, '', '#' + name); } catch (e) { /* 무시 */ } },
+      refresh: () => {},
+      calc: () => {},
+      loader: () => {},
+      colors: ['#3d6fd6', '#c9302a', '#1d7a4c', '#9a5c00', '#7a4fc9', '#0f8a8a', '#b04a8a', '#6b6d72'],
+      _set: (id, rows) => { store[id] = { status: 'ok', data: rows, columns: rows.length ? Object.keys(rows[0]) : [] }; runAll(); },
+      _fail: (id) => { store[id] = { status: 'error', data: [], columns: [] }; runAll(); },
+      _rerun: runAll,
+    };
+  })();
+  document.addEventListener('DOMContentLoaded', () => {
+    const mo = new MutationObserver((recs) => {
+      if (recs.some((r) => r.target.classList && r.target.classList.contains('cn-page'))) window.dash._rerun();
+    });
+    document.querySelectorAll('.cn-page').forEach((s) => mo.observe(s, { attributes: true, attributeFilter: ['hidden'] }));
+    let t;
+    window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => window.dash._rerun(), 200); });
+  });
+</script>
+</head>
+<body class="sf-locked">
+<div class="sf-gate" id="sf-gate" hidden>
+  <form class="sf-gate-box" id="sf-form" autocomplete="on">
+    <h1>칠호 투자노트</h1>
+    <p>비밀번호를 입력하세요. 이 기기에서는 다음부터 바로 열립니다.</p>
+    <label for="sf-pw" class="sf-msg" style="color: var(--color-fg-muted) !important; min-height: 0;">비밀번호</label>
+    <input class="sf-input" type="password" id="sf-pw" name="password" autocomplete="current-password" required>
+    <button class="sf-btn" type="submit" id="sf-open">열기</button>
+    <p class="sf-msg" id="sf-msg" role="status"></p>
+  </form>
+</div>
+
+<div id="dash-root">
+
+<style>
+  /* 칠호 투자노트: 탭 3개(오늘 / 특징주 점검 / 일지·텔레그램), 카드 그리드, 표 중심. 한국 관례: 상승·순매수 빨강, 하락·순매도 파랑 */
+  .cn {
+    --cn-up: var(--color-bad);
+    --cn-down: color-mix(in srgb, #2f6bd6 72%, var(--color-fg) 28%);
+    --cn-organ: color-mix(in srgb, #b4690e 75%, var(--color-fg) 25%);
+    font-family: var(--font-anthropic-sans);
+    color: var(--color-fg);
+    display: grid;
+    gap: var(--cds-gap-lg);
+    min-width: 0;
+  }
+  .cn-head { display: grid; gap: var(--cds-gap-xs); }
+  .cn-head h1 {
+    font-family: var(--font-anthropic-serif);
+    font-weight: 400;
+    font-size: var(--cds-font-size-title);
+    margin: 0;
+    text-wrap: balance;
+  }
+  .cn-lede { margin: 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-body); max-width: 72ch; line-height: 1.6; }
+  .cn .cn-lede b { color: var(--color-fg); font-weight: 600; }
+  .cn-tabs { display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs); border-bottom: 1px solid var(--color-border-line); }
+  .cn-tab {
+    appearance: none; background: none; border: 0; border-bottom: 2px solid transparent;
+    padding: var(--cds-pad-sm) var(--cds-pad-md); font: inherit; font-size: var(--cds-font-size-body);
+    color: var(--color-fg-muted); cursor: pointer; margin-bottom: -1px;
+  }
+  .cn-tab[aria-selected="true"] { color: var(--color-fg); border-bottom-color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+  .cn-tab:focus-visible, .cn-sort:focus-visible, .cn-select:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
+  .cn-page { display: grid; gap: var(--cds-gap-lg); min-width: 0; }
+  .cn-grid { display: grid; gap: var(--cds-gap-md); grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); }
+  .cn-card {
+    background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius);
+    padding: var(--cds-pad-lg); min-width: 0; display: grid; gap: var(--cds-gap-sm); align-content: start;
+  }
+  .cn-card h2 { margin: 0; font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); text-wrap: balance; }
+  .cn-note { margin: 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); line-height: 1.5; }
+  .cn-h2-sub { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); font-weight: 400; margin-left: 4px; }
+  .cn-sec {
+    display: inline-block; margin-left: 3px; padding: 0 3px; border-radius: 4px; vertical-align: 1px;
+    border: 1px solid var(--color-border-line); color: var(--color-fg-muted); font-size: 10px; font-weight: 500; line-height: 1.4;
+  }
+  .cn-help p, .cn-help li { font-size: var(--cds-font-size-body); line-height: 1.65; }
+  .cn-help p { margin: 0; }
+  .cn-help ul { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+  .cn-help b { font-weight: 600; }
+  .cn-help .cn-table td { white-space: normal; text-align: left; }
+  .cn-table.cn-compact { font-size: var(--cds-font-size-caption); }
+  .cn-table.cn-compact th, .cn-table.cn-compact td { padding: 6px 4px; }
+  .cn-compact .cn-name-btn, #card-features .cn-name-btn {
+    display: inline-block; max-width: 10em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;
+  }
+  .cn-compact .cn-name-btn { max-width: 7em; }
+  #card-features .cn-table th, #card-features .cn-table td { padding: 6px 7px; }
+  .cn-table td.cn-strong { font-weight: var(--cds-font-weight-medium); }
+  .cn-scroll { overflow-x: auto; min-width: 0; }
+  .cn-scroll.cn-tall { max-height: 34rem; overflow: auto; }
+  .cn-table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: var(--cds-font-size-body); }
+  .cn-table th, .cn-table td { padding: 6px 8px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--color-border-line); }
+  .cn-table th {
+    color: var(--color-fg-muted); font-weight: var(--cds-font-weight-medium); font-size: var(--cds-font-size-caption);
+    position: sticky; top: 0; background: var(--color-panel); z-index: 1;
+  }
+  .cn-table .l { text-align: left; }
+  .cn-table .c { text-align: center; }
+  .cn-table td.cn-name { text-align: left; font-weight: var(--cds-font-weight-medium); }
+  .cn-code {
+    appearance: none; background: none; border: 0; position: relative; cursor: copy;
+    padding: 1px 4px; margin-left: 3px; border-radius: 4px; font: inherit; font-weight: 400;
+    font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); font-variant-numeric: tabular-nums;
+  }
+  .cn-code:hover { background: var(--color-border-line); color: var(--color-fg); }
+  .cn-code:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 1px; }
+  .cn-code.is-copied { color: var(--color-ok); }
+  .cn-code.is-copied::after, .cn-code.is-failed::after {
+    position: absolute; left: 50%; bottom: calc(100% + 2px); transform: translateX(-50%); white-space: nowrap;
+    background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: 4px;
+    box-shadow: var(--cds-shadow-popover); padding: 1px 6px; font-size: 11px; z-index: 3;
+  }
+  .cn-code.is-copied::after { content: "복사됨"; color: var(--color-ok); }
+  .cn-code.is-failed::after { content: "복사 안 됨"; color: var(--color-bad); }
+  .cn-summary { margin: 0; font-size: var(--cds-font-size-heading); line-height: 1.6; text-wrap: pretty; }
+  .cn-link-btn {
+    appearance: none; font: inherit; font-size: var(--cds-font-size-caption); color: var(--color-fg); cursor: pointer;
+    background: var(--color-bg); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: 5px 10px;
+  }
+  .cn-link-btn:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
+  .cn-seg { gap: 0; }
+  .cn-seg .cn-link-btn { border-radius: 0; }
+  .cn-seg .cn-link-btn:first-child { border-radius: var(--cds-radius) 0 0 var(--cds-radius); }
+  .cn-seg .cn-link-btn:last-child { border-radius: 0 var(--cds-radius) var(--cds-radius) 0; margin-left: -1px; }
+  .cn-seg .cn-link-btn[aria-pressed="true"] { background: var(--color-fg); color: var(--color-panel); border-color: var(--color-fg); }
+  .cn {
+    --cn-ma5: #d9488f; --cn-ma20: #e08a14; --cn-ma60: #2f9a5a; --cn-ma120: #8a63d2;
+    --cn-foreign: #1d9aa6; --cn-inst: #c7841c;
+  }
+  .cn-chart-big { min-height: 26rem; touch-action: pan-y; }
+  .cn-chart-big svg { cursor: crosshair; }
+  .cn-mark { color: var(--cn-organ); }
+  .cn-mark::before { display: none; }
+  .cn-name-btn {
+    appearance: none; background: none; border: 0; padding: 0; font: inherit; font-weight: inherit; color: inherit;
+    cursor: pointer; text-align: left; text-decoration: underline; text-decoration-color: var(--color-border-line); text-underline-offset: 3px;
+  }
+  .cn-name-btn:hover { text-decoration-color: var(--color-fg-muted); }
+  .cn-name-btn:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
+  .cn-details summary { cursor: pointer; font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); }
+  .cn-details:not([open]) { gap: 0; }
+  .cn-sort {
+    appearance: none; background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer;
+    text-decoration: underline dotted; text-underline-offset: 3px;
+  }
+  .cn-table th[aria-sort="descending"] .cn-sort { color: var(--color-fg); text-decoration: none; }
+  .cn-up { color: var(--cn-up); }
+  .cn-down { color: var(--cn-down); }
+  .cn-mute { color: var(--color-fg-muted); }
+  .cn-badge {
+    display: inline-block; min-width: 1.4em; padding: 0 4px; border-radius: var(--cds-radius);
+    color: var(--cn-organ); border: 1px solid currentColor; font-size: var(--cds-font-size-caption); line-height: 1.4;
+  }
+  .cn-flowbar { position: relative; height: 6px; margin-top: 4px; background: var(--color-border-line); border-radius: 3px; overflow: hidden; }
+  .cn-flowbar i { position: absolute; top: 0; bottom: 0; display: block; }
+  .cn-chart { position: relative; min-height: 12rem; min-width: 0; }
+  .cn-chart svg { display: block; overflow: visible; }
+  .cn-tip {
+    position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border);
+    border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm);
+    font-size: var(--cds-font-size-caption); white-space: nowrap; z-index: 2;
+  }
+  .cn-tip .t { color: var(--cds-text-secondary); }
+  .cn-legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .cn-legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; background: var(--sw); }
+  .cn-controls { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; }
+  .cn-select {
+    font: inherit; font-size: var(--cds-font-size-body); color: var(--color-fg); background: var(--color-bg);
+    border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: 6px 10px; max-width: 100%;
+  }
+  .cn-channel { display: grid; gap: 2px; padding: var(--cds-pad-sm) 0; border-bottom: 1px solid var(--color-border-line); }
+  .cn-channel:last-child { border-bottom: 0; }
+  .cn-channel strong { font-weight: var(--cds-font-weight-medium); }
+  .cn-md { line-height: 1.7; font-size: var(--cds-font-size-body); max-width: 78ch; min-width: 0; }
+  .cn-md h2, .cn-md h3, .cn-md h4, .cn-md h5 { font-weight: var(--cds-font-weight-medium); margin: 1.2em 0 0.4em; line-height: 1.35; text-wrap: balance; }
+  .cn-md h2 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin-top: 0; }
+  .cn-md h3 { font-size: var(--cds-font-size-heading); }
+  .cn-md h4, .cn-md h5 { font-size: var(--cds-font-size-body); }
+  .cn-md p { margin: 0.5em 0; }
+  .cn-md ul, .cn-md ol { margin: 0.4em 0; padding-left: 1.3em; }
+  .cn-md li { margin: 0.2em 0; }
+  .cn-md li.cn-sub { margin-left: 1.2em; list-style-type: circle; }
+  .cn-md code { font-size: 0.92em; background: var(--color-bg); padding: 0 4px; border-radius: 4px; }
+  .cn-md a { color: inherit; text-decoration: underline; text-decoration-color: var(--color-fg-muted); text-underline-offset: 2px; }
+  .cn .cn-md b { font-weight: 650; }
+  .cn-mdtable { border-collapse: collapse; margin: 0.6em 0; font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; }
+  .cn-mdtable th, .cn-mdtable td { border: 1px solid var(--color-border-line); padding: 5px 8px; text-align: left; vertical-align: top; }
+  .cn-mdtable th { background: var(--color-bg); font-weight: var(--cds-font-weight-medium); }
+  .cn [data-dash-source-state=empty] { color: transparent; }
+  .cn [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+  @media (max-width: 640px) {
+    .cn-hide-sm { display: none; }
+    .cn-card { padding: var(--cds-pad-md); }
+  }
+</style>
+
+<div class="cn">
+  <header class="cn-head" id="top">
+    <h1>칠호 투자노트</h1>
+    <p class="cn-lede">
+      <span data-draw="day-label" data-source="today" data-field="day_label" data-where="id=meta" class="dash-skeleton">—</span> 장 마감 기준.
+      오늘의 특징주 <b data-draw="n-feat" data-source="today" data-field="n_features" data-where="id=meta">—</b>종목,
+      이 중 외국인·기관 동반 순매수(◎) <b data-draw="n-organ" data-source="today" data-field="n_organ" data-where="id=meta">—</b>종목.
+      1주일 2회 이상 <b data-draw="n-week" data-source="today" data-field="n_week" data-where="id=meta">—</b>종목,
+      1달 5회 이상 <b data-draw="n-month" data-source="today" data-field="n_month" data-where="id=meta">—</b>종목.
+      <span class="cn-sentence" data-when="stale">그날 종목별 수급이 아직 올라오지 않아 수급은 <b data-draw="flow-label" data-source="today" data-field="flow_label" data-where="id=meta">—</b> 기준입니다.</span>
+      <span data-draw="pick-sentence" data-source="today"></span>
+    </p>
+  </header>
+
+  <nav class="cn-tabs" role="tablist" aria-label="페이지">
+    <button class="cn-tab" role="tab" id="tab-today" data-tab="today" aria-selected="true">오늘</button>
+    <button class="cn-tab" role="tab" id="tab-chart" data-tab="chart" aria-selected="false">차트</button>
+    <button class="cn-tab" role="tab" id="tab-history" data-tab="history" aria-selected="false">특징주 6개월 점검</button>
+    <button class="cn-tab" role="tab" id="tab-journal" data-tab="journal" aria-selected="false">일지·텔레그램</button>
+    <button class="cn-tab" role="tab" id="tab-help" data-tab="help" aria-selected="false">사용법</button>
+  </nav>
+
+  <!-- 오늘 -->
+  <section class="cn-page" id="today" role="tabpanel" aria-labelledby="tab-today">
+    <div class="cn-grid">
+      <div class="cn-card" id="card-market">
+        <h2>시장 전체 투자자별 순매수</h2>
+        <p class="cn-note">당일 코스피·코스닥 전체, 억원. 막대는 두 시장 같은 축.</p>
+        <div class="cn-scroll">
+          <table class="cn-table" data-source="today" data-row-key="id">
+            <thead><tr>
+              <th class="l" data-field="market">시장</th>
+              <th data-field="indiv">개인</th>
+              <th data-field="foreign">외국인</th>
+              <th data-field="organ">기관</th>
+            </tr></thead>
+            <tbody data-draw="market-rows"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="cn-card" id="card-summary-today">
+        <h2>칠호 한 줄 요약</h2>
+        <p class="cn-summary" data-draw="today-summary" data-source="journal">—</p>
+        <div class="cn-controls">
+          <button class="cn-link-btn" type="button" id="open-daily">일일 정리 전체 보기</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="cn-card" id="card-features">
+      <h2>오늘의 특징주 <span class="cn-h2-sub" data-draw="feature-basis" data-source="today">—</span></h2>
+      <p class="cn-note">실시간이 아니라 가장 최근 장 마감 수급으로 선별한 목록입니다. 저녁에 선별한 종목이 다음 거래일의 오늘의 특징주가 됩니다. 순위는 주식·ETF·ETN을 모두 넣어 셉니다.</p>
+      <p class="cn-note">기본 순서: ◎(외국인·기관 동반 순매수) 종목이 먼저, 그 안에서 외국인 순매수 금액이 큰 순입니다. 머리글을 누르면 그 열이 큰 순서로 다시 정렬됩니다. 종목코드를 누르면 복사됩니다.</p>
+      <div class="cn-scroll cn-tall">
+        <table class="cn-table" data-source="today" data-row-key="id">
+          <thead><tr>
+            <th class="c" data-field="with_organ"><button class="cn-sort" data-sort="order">◎</button></th>
+            <th class="l" data-field="name">종목</th>
+            <th class="cn-hide-sm" data-field="market">시장</th>
+            <th data-field="chg_pct"><button class="cn-sort" data-sort="chg_pct">등락률</button></th>
+            <th data-field="value_eok"><button class="cn-sort" data-sort="value_eok">거래대금</button></th>
+            <th class="cn-hide-sm" data-field="v_rank">대금순위</th>
+            <th data-field="foreign_eok"><button class="cn-sort" data-sort="foreign_eok">외국인</button></th>
+            <th class="cn-hide-sm" data-field="f_rank">외인순위</th>
+            <th data-field="organ_eok"><button class="cn-sort" data-sort="organ_eok">기관</button></th>
+            <th class="cn-hide-sm" data-field="o_rank">기관순위</th>
+            <th class="cn-hide-sm" data-field="foreign_5d_eok"><button class="cn-sort" data-sort="foreign_5d_eok">외인 5일</button></th>
+            <th class="cn-hide-sm" data-field="foreign_streak">외인연속</th>
+            <th class="cn-hide-sm" data-field="organ_streak">기관연속</th>
+            <th data-field="week_hits"><button class="cn-sort" data-sort="week_hits">1주</button></th>
+            <th data-field="month_hits"><button class="cn-sort" data-sort="month_hits">1달</button></th>
+          </tr></thead>
+          <tbody data-draw="feature-rows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="cn-grid">
+      <div class="cn-card" id="card-week">
+        <h2>1주일간 2회 이상 <span class="cn-h2-sub" data-draw="week-count" data-source="today">—</span></h2>
+        <p class="cn-note" data-draw="week-note" data-source="today">—</p>
+        <div class="cn-scroll cn-tall">
+          <table class="cn-table cn-compact" data-source="today" data-row-key="id">
+            <thead><tr>
+              <th class="l" data-field="name">종목</th>
+              <th data-field="week_hits"><button class="cn-sort" data-param="wsort" data-sort="order">1주</button></th>
+              <th data-field="month_hits"><button class="cn-sort" data-param="wsort" data-sort="month_hits">1달</button></th>
+              <th class="cn-hide-sm" data-field="both_hits"><button class="cn-sort" data-param="wsort" data-sort="both_hits">◎</button></th>
+              <th data-field="period_ret"><button class="cn-sort" data-param="wsort" data-sort="period_ret">5일 등락</button></th>
+              <th data-field="period_foreign"><button class="cn-sort" data-param="wsort" data-sort="period_foreign">외국인</button></th>
+              <th class="cn-hide-sm" data-field="period_organ"><button class="cn-sort" data-param="wsort" data-sort="period_organ">기관</button></th>
+              <th data-field="last_label">마지막</th>
+            </tr></thead>
+            <tbody data-draw="week-rows"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="cn-card" id="card-month">
+        <h2>1달간 5회 이상 <span class="cn-h2-sub" data-draw="month-count" data-source="today">—</span></h2>
+        <p class="cn-note" data-draw="month-note" data-source="today">—</p>
+        <div class="cn-scroll cn-tall">
+          <table class="cn-table cn-compact" data-source="today" data-row-key="id">
+            <thead><tr>
+              <th class="l" data-field="name">종목</th>
+              <th data-field="month_hits"><button class="cn-sort" data-param="msort" data-sort="order">1달</button></th>
+              <th data-field="week_hits"><button class="cn-sort" data-param="msort" data-sort="week_hits">1주</button></th>
+              <th class="cn-hide-sm" data-field="both_hits"><button class="cn-sort" data-param="msort" data-sort="both_hits">◎</button></th>
+              <th data-field="period_ret"><button class="cn-sort" data-param="msort" data-sort="period_ret">20일 등락</button></th>
+              <th data-field="period_foreign"><button class="cn-sort" data-param="msort" data-sort="period_foreign">외국인</button></th>
+              <th class="cn-hide-sm" data-field="period_organ"><button class="cn-sort" data-param="msort" data-sort="period_organ">기관</button></th>
+              <th data-field="last_label">마지막</th>
+            </tr></thead>
+            <tbody data-draw="month-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="cn-grid">
+      <div class="cn-card" id="card-surge">
+        <h2>거래 급증</h2>
+        <p class="cn-note">거래대금 50억 이상이면서 거래량이 최근 20거래일 평균의 3배 이상인 종목. 거래량배수 큰 순.</p>
+        <div class="cn-scroll cn-tall">
+          <table class="cn-table" data-source="today" data-row-key="id">
+            <thead><tr>
+              <th class="l" data-field="name">종목</th>
+              <th data-field="chg_pct">등락률</th>
+              <th data-field="value_eok">거래대금</th>
+              <th data-field="vol_ratio">거래량배수</th>
+              <th class="cn-hide-sm" data-field="foreign_eok">외국인</th>
+              <th class="cn-hide-sm" data-field="organ_eok">기관</th>
+            </tr></thead>
+            <tbody data-draw="surge-rows"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="cn-card" id="card-movers">
+        <h2>15% 이상 급등</h2>
+        <p class="cn-note">거래대금 30억 이상. 외국인·기관은 수급 기준일 값.</p>
+        <div class="cn-scroll cn-tall">
+          <table class="cn-table" data-source="today" data-row-key="id">
+            <thead><tr>
+              <th class="l" data-field="name">종목</th>
+              <th data-field="chg_pct">등락률</th>
+              <th data-field="value_eok">거래대금</th>
+              <th data-field="vol_ratio">거래량배수</th>
+              <th class="cn-hide-sm" data-field="foreign_eok">외국인</th>
+              <th class="cn-hide-sm" data-field="organ_eok">기관</th>
+            </tr></thead>
+            <tbody data-draw="mover-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <details class="cn-card cn-details" id="card-rule">
+      <summary>특징주 고르는 규칙과 읽는 법</summary>
+      <p class="cn-note">거래대금 상위 100 안에 들면서 외국인 순매수 상위 200에도 드는 종목입니다. 기관 순매수 상위 200까지 겹치면 ◎를 붙여 위에 둡니다.</p>
+      <p class="cn-note">순위는 주식·ETF·ETN을 모두 넣어 셉니다(11/09부터). ETF·ETN은 이름 옆에 표시하고, 레버리지·인버스는 시장 방향, 섹터 ETF는 섹터 자금 흐름으로 읽습니다. ETF는 유동성공급자(증권사) 매매가 기관 수급에 섞여 ◎의 뜻이 주식과 다릅니다.</p>
+      <p class="cn-note">종목별 외국인·기관 금액은 순매수 수량에 종가를 곱한 추정치이고, 순위는 수급 기준일의 전체 중 순위입니다. 거래 급증과 15% 이상 급등 표는 주식만 봅니다.</p>
+      <p class="cn-note">1주일은 선별일을 포함한 최근 5거래일, 1달은 최근 20거래일입니다. 세 분류는 서로 겹칠 수 있습니다. 표의 1주·1달 횟수는 기준(2회, 5회)을 넘으면 진하게 보입니다.</p>
+      <p class="cn-note">6개월 점검상 선정 당일 추격 매수는 성과가 나빴습니다. 이 표는 돈이 들어온 종목을 보는 용도로 쓰고, 진입은 눌림에서 노리세요. 자세한 숫자는 "특징주 6개월 점검" 탭에 있습니다.</p>
+      <p class="cn-note">1주일·1달에 반복 선정된 종목은 처음 뽑힌 종목보다 덜 나빴지만(5개월 중 4개월), 평균은 여전히 마이너스였습니다(11/09 점검, ETF·ETN 포함 규칙). 반복 선정도 매수 신호로 보지 않습니다.</p>
+    </details>
+  </section>
+
+  <!-- 차트 -->
+  <section class="cn-page" id="chart" role="tabpanel" aria-labelledby="tab-chart" hidden>
+    <div class="cn-card" id="card-chart">
+      <div class="cn-controls">
+        <select class="cn-select" id="chart-select" aria-label="차트 종목 선택" data-draw="chart-select" data-source="charts"></select>
+        <span class="cn-note" data-draw="chart-caption" data-source="charts">—</span>
+      </div>
+      <div class="cn-legend cn-ma-legend">
+        <span style="--sw: var(--cn-ma5)">5일선</span>
+        <span style="--sw: var(--cn-ma20)">20일선</span>
+        <span style="--sw: var(--cn-ma60)">60일선</span>
+        <span style="--sw: var(--cn-ma120)">120일선</span>
+        <span class="cn-mark">▲ 겹친 날</span>
+        <span style="--sw: var(--cn-foreign)">외국인</span>
+        <span style="--sw: var(--cn-inst)">기관</span>
+      </div>
+      <div class="cn-chart cn-chart-big" data-draw="chart-main" data-source="charts"></div>
+      <p class="cn-note" data-draw="chart-flagnote" data-source="charts">—</p>
+      <p class="cn-note" data-draw="chart-holdnote" data-source="charts"></p>
+      <p class="cn-note">최근 약 6개월(125거래일). 캔들은 빨강이 상승, 파랑이 하락. 거래대금과 외국인·기관 순매수는 억원이며 종목별 '수량 × 종가' 추정치입니다. 맨 아래 칸은 종목의 외국인·기관 보유 비중이 구간 시작보다 얼마나 늘고 줄었는지(%p) 보여줍니다. 차트를 누르거나 손가락으로 끌면 그날 값을 보여줍니다.</p>
+    </div>
+  </section>
+
+  <!-- 특징주 6개월 점검 -->
+  <section class="cn-page" id="history" role="tabpanel" aria-labelledby="tab-history" hidden>
+    <div class="cn-card" id="card-finding">
+      <h2>선정 당일에 샀다면</h2>
+      <p class="cn-lede">
+        <span data-draw="h-period" data-source="history" data-field="period_label" data-where="id=meta">—</span>,
+        <b data-draw="h-days" data-source="history" data-field="n_days" data-where="id=meta">—</b>거래일 동안 특징주는
+        <b data-draw="h-nsel" data-source="history" data-field="n_sel" data-where="id=meta">—</b>번 뽑혔습니다.
+        선정일 종가에 사서 5거래일 뒤 팔았다면 평균 <b data-draw="h-all5" data-source="history" data-field="avg" data-where="id=summary-all-5">—</b>,
+        오른 경우는 <b data-draw="h-all5win" data-source="history" data-field="win" data-where="id=summary-all-5">—</b>였습니다.
+        같은 기간 전 종목 평균은 <b data-draw="h-mkt5" data-source="history" data-field="avg" data-where="id=market-5">—</b>입니다.
+      </p>
+      <p class="cn-lede">
+        1년(<span data-draw="y-period" data-source="history" data-field="year_period_label" data-where="id=meta">—</span>)으로 넓히면
+        <b data-draw="y-nsel" data-source="history" data-field="year_n_sel" data-where="id=meta">—</b>번 뽑혔고,
+        5일 뒤 평균 <b data-draw="y-all5" data-source="history" data-field="avg" data-where="id=ysum-all-5">—</b>,
+        오른 경우 <b data-draw="y-all5win" data-source="history" data-field="win" data-where="id=ysum-all-5">—</b>였습니다.
+        같은 기간 전 종목 평균은 <b data-draw="y-mkt5" data-source="history" data-field="avg" data-where="id=ymarket-5">—</b>입니다.
+      </p>
+      <p class="cn-note">과거 거래대금은 거래량×종가, 수급은 순매수 수량×종가로 추정. 지금 상장된 종목만 대상이라 그사이 상장폐지된 종목은 빠져 있고, 기간이 길수록 이 영향이 커집니다.</p>
+    </div>
+
+    <div class="cn-grid">
+      <div class="cn-card" id="card-cond-chg">
+        <h2>선정일 등락률별 5일 뒤 수익률</h2>
+        <p class="cn-note">많이 오른 날 뽑힌 종목일수록 이후가 나빴습니다.</p>
+        <div class="cn-chart" data-draw="cond-chg" data-source="history"></div>
+      </div>
+      <div class="cn-card" id="card-cond-int">
+        <h2>외국인 매수 강도별 5일 뒤 수익률</h2>
+        <p class="cn-note">외국인 순매수 금액이 그날 거래대금에서 차지한 비중.</p>
+        <div class="cn-chart" data-draw="cond-int" data-source="history"></div>
+      </div>
+    </div>
+
+    <div class="cn-card" id="card-summary">
+      <h2>기간별 성과</h2>
+      <p class="cn-note">"시장 대비"는 같은 날 전 종목 동일가중 평균과의 차이(%p).</p>
+      <div class="cn-scroll">
+        <table class="cn-table" data-source="history" data-row-key="id">
+          <thead><tr>
+            <th class="l" data-field="group">구분</th>
+            <th data-field="horizon">보유</th>
+            <th class="cn-hide-sm" data-field="n">표본</th>
+            <th data-field="avg">평균</th>
+            <th class="cn-hide-sm" data-field="median">중앙값</th>
+            <th data-field="win">오른 비율</th>
+            <th data-field="excess">시장 대비</th>
+            <th class="cn-hide-sm" data-field="beat">시장보다 나은 비율</th>
+          </tr></thead>
+          <tbody data-draw="summary-rows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="cn-card" id="card-daily">
+      <h2>날짜별 특징주 수</h2>
+      <div class="cn-legend"><span style="--sw: var(--cds-chart-muted)">외국인만</span><span style="--sw: var(--cn-organ)">◎ 외국인·기관 동반</span></div>
+      <div class="cn-chart" data-draw="daily-chart" data-source="history"></div>
+    </div>
+
+    <div class="cn-grid">
+      <div class="cn-card" id="card-cond-table">
+        <h2>조건별 성과 전체</h2>
+        <div class="cn-scroll">
+          <table class="cn-table" data-source="history" data-row-key="id">
+            <thead><tr>
+              <th class="l" data-field="group">기준</th>
+              <th class="l" data-field="label">구간</th>
+              <th class="cn-hide-sm" data-field="n">표본</th>
+              <th data-field="r1">1일</th>
+              <th data-field="r5">5일</th>
+              <th data-field="r20">20일</th>
+              <th class="cn-hide-sm" data-field="win5">5일 오른 비율</th>
+            </tr></thead>
+            <tbody data-draw="cond-rows"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="cn-card" id="card-frequent">
+        <h2>가장 자주 뽑힌 종목</h2>
+        <div class="cn-controls cn-seg" role="group" aria-label="기간">
+          <button type="button" class="cn-link-btn" data-fperiod="6m" aria-pressed="true">6개월</button>
+          <button type="button" class="cn-link-btn" data-fperiod="1y" aria-pressed="false">1년</button>
+        </div>
+        <p class="cn-note" data-draw="frequent-note" data-source="history">—</p>
+        <div class="cn-scroll cn-tall">
+          <table class="cn-table" data-source="history" data-row-key="id">
+            <thead><tr>
+              <th class="l" data-field="name">종목</th>
+              <th data-field="count">선정</th>
+              <th data-field="with_organ">◎</th>
+              <th class="cn-hide-sm" data-field="last">마지막</th>
+              <th data-field="avg_r5">5일 뒤</th>
+            </tr></thead>
+            <tbody data-draw="frequent-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 사용법 -->
+  <section class="cn-page" id="help" role="tabpanel" aria-labelledby="tab-help" hidden>
+    <div class="cn-card cn-help">
+      <h2>칠호 투자노트는</h2>
+      <p>칠호가 매일 모은 <b>수급, 특징주, 텔레그램 정리</b>를 폰이나 PC에서 한눈에 보는 개인 대시보드입니다. 기기마다 비밀번호를 한 번 넣으면 기억합니다. 다른 사람 기기에서 보셨다면 화면 맨 아래 "이 기기에서 잠그기"를 누르세요.</p>
+    </div>
+
+    <div class="cn-card cn-help">
+      <h2>언제 바뀌나</h2>
+      <div class="cn-scroll">
+        <table class="cn-table">
+          <tbody>
+            <tr><td class="cn-name">평일 08:55</td><td>아침 브리핑(한 줄 요약)과 텔레그램 알림</td></tr>
+            <tr><td class="cn-name">평일 저녁 20:30 이후</td><td>시장 수급, 오늘의 특징주, 분류 표, 차트, 일일 정리. 네이버 종목별 수급이 늦게 올라오면 그만큼 늦어집니다</td></tr>
+            <tr><td class="cn-name">금요일 저녁</td><td>특징주 6개월 점검 다시 계산</td></tr>
+            <tr><td class="cn-name">매일 밤·주말</td><td>텔레그램 과거 글 정리</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="cn-grid">
+      <div class="cn-card cn-help">
+        <h2>오늘</h2>
+        <ul>
+          <li><b>시장 전체 투자자별 순매수</b>: 코스피·코스닥의 개인·외국인·기관이 얼마를 사고팔았는지 막대로 보여 줍니다.</li>
+          <li><b>칠호 한 줄 요약</b>: 아침 브리핑과 저녁 일일 정리 중 최신 것의 첫 줄입니다. 버튼을 누르면 전문을 봅니다.</li>
+          <li><b>오늘의 특징주</b>: 거래대금 상위 100이면서 외국인 순매수 상위 200인 종목입니다. 순위는 주식·ETF·ETN을 모두 넣어 셉니다. 기관 순매수 상위 200까지 겹치면 ◎를 붙여 맨 위에 둡니다.</li>
+          <li><b>표 다루기</b>: 머리글을 누르면 정렬, 종목코드를 누르면 복사, 종목명을 누르면 그 종목 차트로 갑니다. ETF·ETN은 이름 옆에 표시합니다.</li>
+          <li><b>1주·1달 칸</b>: 그 기간에 몇 번 선정됐는지이고, 기준(2회, 5회)을 넘으면 진하게 보입니다.</li>
+          <li><b>1주일간 2회 이상 / 1달간 5회 이상</b>: 반복해서 뽑힌 종목입니다. 기간 등락률과 외국인·기관 누적 금액을 함께 보여 주고, 오늘의 특징주에도 든 종목에는 "오늘" 표시가 붙습니다.</li>
+          <li><b>거래 급증 / 15% 이상 급등</b>: 주식만 봅니다. 거래 급증은 거래대금 50억 이상이면서 거래량이 평소의 3배 이상, 급등은 거래대금 30억 이상인 종목입니다.</li>
+        </ul>
+      </div>
+      <div class="cn-card cn-help">
+        <h2>차트</h2>
+        <ul>
+          <li><b>선택 상자</b>: 시장, 오늘의 특징주, 1주일 2회, 1달 5회, 최근 5일 ◎, 거래 급증·급등, 관심종목, 채널 언급, 자주 선정, 시총 상위로 묶여 있습니다. 사이트 표에 나오는 종목은 모두 차트가 있습니다.</li>
+          <li><b>캔들</b>: 최근 6개월, 빨강이 상승·파랑이 하락이고 5·20·60·120일선을 함께 그립니다.</li>
+          <li><b>▲ △</b>: 종목은 ▲가 ◎로 뽑힌 날, △가 외국인만 겹친 날입니다. 시장 차트의 ▲는 외국인·기관이 함께 사고 거래대금이 평소 이상인 날입니다.</li>
+          <li><b>아래 칸</b>: 거래대금, 외국인·기관 순매수, 보유 비중 변화입니다. 보유 비중은 주식만이고 외국인은 실제 보유율, 기관은 추정치입니다.</li>
+          <li>차트를 누르거나 손가락으로 끌면 그날 값이 나옵니다.</li>
+        </ul>
+      </div>
+      <div class="cn-card cn-help">
+        <h2>특징주 6개월 점검</h2>
+        <ul>
+          <li>지난 약 120거래일 동안 뽑힌 특징주를 선정일 종가에 샀다면 5일·20일 뒤 어땠는지 보여 줍니다.</li>
+          <li>선정일 등락률별, 외국인 매수 강도별, 주식과 ETF·ETN별 성과와 가장 자주 뽑힌 종목이 있습니다. 맨 위에 1년 요약이 한 줄 더 있고, 자주 뽑힌 종목은 6개월/1년 버튼으로 바꿔 봅니다.</li>
+          <li>결론은 같습니다. <b>돈이 들어온 종목을 보는 지도</b>로 쓰고, 선정 당일 추격 매수 신호로 쓰지 않습니다.</li>
+        </ul>
+      </div>
+      <div class="cn-card cn-help">
+        <h2>일지·텔레그램</h2>
+        <ul>
+          <li><b>채널 학습 현황</b>: 김정철 채널 글을 오래된 달부터 정리하고, 칠호의 신뢰도 평가(프로필)를 봅니다.</li>
+          <li><b>많이 언급된 종목</b>: 달별로 봅니다.</li>
+          <li><b>문서 읽기</b>: 일일 정리, 아침 브리핑, 월별 정리를 읽습니다. 글번호(#숫자)를 누르면 텔레그램 원문이 열립니다.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cn-card cn-help">
+      <h2>읽을 때 주의할 점</h2>
+      <ul>
+        <li><b>특징주는 매수 신호가 아닙니다.</b> 반복 선정 종목도 평균은 마이너스였습니다.</li>
+        <li><b>오늘의 특징주는 전날 저녁에 뽑은 목록입니다.</b> 종목별 수급이 저녁에 올라오기 때문이고, 늦어지면 몇 일 기준인지 화면에 밝혀 둡니다.</li>
+        <li><b>외국인·기관 금액은 추정치입니다.</b> 순매수 수량에 종가를 곱한 값이고, 기관 보유 비중도 추정입니다.</li>
+        <li><b>ETF·ETN은 따로 읽습니다.</b> 레버리지·인버스는 시장 방향, 섹터 ETF는 섹터 자금 흐름입니다. 기관 수급에 증권사(유동성공급자) 매매가 섞여 ◎의 뜻이 주식과 다릅니다.</li>
+        <li><b>종목 등락률과 지수 등락률은 바로 비교하지 않습니다.</b> 종목은 20:00 시간외 거래까지 반영한 값이고, 지수는 15:30 종가입니다.</li>
+      </ul>
+    </div>
+
+    <div class="cn-card cn-help">
+      <h2>뒤에서는 이렇게 돕니다</h2>
+      <ul>
+        <li><b>자료</b>: 네이버 금융과 텔레그램 공개 채널을 로그인 없이 읽습니다.</li>
+        <li><b>정리</b>: 아침 브리핑, 저녁 일일 정리, 채널 신뢰도 평가는 칠호(Claude)가 씁니다.</li>
+        <li><b>사이트</b>: GitHub Pages라 무료입니다. 자료는 비밀번호로만 풀리게 잠가서 올리므로 주소를 알아도 내용은 볼 수 없습니다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 일지·텔레그램 -->
+  <section class="cn-page" id="journal" role="tabpanel" aria-labelledby="tab-journal" hidden>
+    <div class="cn-grid">
+      <div class="cn-card" id="card-channels">
+        <h2>학습 중인 텔레그램 채널</h2>
+        <p class="cn-note">공개 채널은 첫 글부터 모아 오래된 달부터 차례로 정리합니다.</p>
+        <div data-draw="channel-list" data-source="journal"></div>
+      </div>
+      <div class="cn-card" id="card-mentions">
+        <h2>채널에서 많이 언급된 종목</h2>
+        <div class="cn-controls">
+          <select class="cn-select" id="month-select" aria-label="월 선택" data-draw="month-select" data-source="journal"></select>
+        </div>
+        <div class="cn-scroll">
+          <table class="cn-table" data-source="journal" data-row-key="id">
+            <thead><tr>
+              <th class="l" data-field="rank">순위</th>
+              <th class="l" data-field="name">종목</th>
+              <th data-field="count">언급 글 수</th>
+            </tr></thead>
+            <tbody data-draw="mention-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="cn-card" id="card-reader">
+      <div class="cn-controls">
+        <select class="cn-select" id="doc-select" aria-label="문서 선택" data-draw="doc-select" data-source="journal"></select>
+      </div>
+      <p class="cn-note">글 번호(#숫자)를 누르면 텔레그램 원문이 열립니다.</p>
+      <article class="cn-md" lang="ko" data-draw="doc-view" data-source="journal"></article>
+    </div>
+  </section>
+</div>
+
+<script>
+  // 공용 도우미와 탭 전환
+  (() => {
+    const sign = (v) => (v > 0 ? '+' : v < 0 ? '−' : '');
+    const eok = (v) => {
+      if (v == null || Number.isNaN(Number(v))) return '—';
+      const n = Number(v);
+      const a = Math.abs(n);
+      if (a >= 10000) return sign(n) + (a / 10000).toFixed(2) + '조';
+      if (a >= 100) return sign(n) + d3.format(',.0f')(a) + '억';
+      return sign(n) + a.toFixed(1) + '억';
+    };
+    const eokAbs = (v) => (v == null ? '—' : eok(Math.abs(Number(v))).replace(/^[+−]/, ''));
+    const pct = (v, d = 2) => (v == null || Number.isNaN(Number(v)) ? '—' : sign(Number(v)) + Math.abs(Number(v)).toFixed(d) + '%');
+    const tone = (v) => (v > 0 ? 'cn-up' : v < 0 ? 'cn-down' : '');
+    const rowsOf = (id, kind) => {
+      const d = dash.data(id);
+      return d.status === 'ok' ? d.data.filter((r) => r.kind === kind) : null;
+    };
+    const cell = (tr, text, cls) => {
+      const td = document.createElement('td');
+      td.textContent = text;
+      if (cls) td.className = cls;
+      tr.append(td);
+      return td;
+    };
+    const nameCell = (tr, r) => {
+      const td = document.createElement('td');
+      td.className = 'cn-name';
+      const nb = document.createElement('button');
+      nb.type = 'button';
+      nb.className = 'cn-name-btn';
+      nb.dataset.chart = r.code;
+      nb.title = r.name + ' 차트 보기';
+      nb.textContent = r.name;
+      td.append(nb);
+      if (r.sec) {
+        const t = document.createElement('span');
+        t.className = 'cn-sec';
+        t.textContent = r.sec;
+        td.append(t);
+      }
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'cn-code';
+      b.dataset.copy = r.code;
+      b.title = '종목코드 복사';
+      b.setAttribute('aria-label', r.name + ' 종목코드 ' + r.code + ' 복사');
+      b.textContent = r.code;
+      td.append(b);
+      tr.append(td);
+    };
+    const streak = (v) => (!v ? '—' : v > 0 ? v + '일↑' : -v + '일↓');
+    const settle = (el, status) => {
+      el.classList.toggle('dash-skeleton', status === 'loading');
+    };
+    window.cn = { eok, eokAbs, pct, tone, rowsOf, cell, nameCell, streak, settle };
+
+    const pages = ['today', 'chart', 'history', 'journal', 'help'];
+    const show = (name) => {
+      document.querySelectorAll('.cn-page').forEach((sec) => { sec.hidden = sec.id !== name; });
+      document.querySelectorAll('.cn-tab').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
+    };
+    document.querySelectorAll('.cn-tab').forEach((b) => {
+      b.addEventListener('click', () => {
+        show(b.dataset.tab);
+        dash.setLink(b.dataset.tab);
+      });
+    });
+    const start = location.hash.slice(1);
+    show(pages.includes(start) ? start : 'today');
+    window.cn.show = show;
+
+    // 종목코드 누르면 복사
+    const copyText = async (t) => {
+      try {
+        await navigator.clipboard.writeText(t);
+        return true;
+      } catch (e) {
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = t;
+          ta.setAttribute('readonly', '');
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.append(ta);
+          ta.select();
+          const ok = document.execCommand('copy');
+          ta.remove();
+          return ok;
+        } catch (e2) {
+          return false;
+        }
+      }
+    };
+    document.addEventListener('click', async (ev) => {
+      const b = ev.target.closest ? ev.target.closest('button.cn-code') : null;
+      if (!b) return;
+      const ok = await copyText(b.dataset.copy || b.textContent);
+      b.classList.remove('is-copied', 'is-failed');
+      b.classList.add(ok ? 'is-copied' : 'is-failed');
+      setTimeout(() => b.classList.remove('is-copied', 'is-failed'), 1300);
+    });
+
+    // 표의 종목명을 누르면 차트 탭으로
+    document.addEventListener('click', (ev) => {
+      const b = ev.target.closest ? ev.target.closest('button.cn-name-btn') : null;
+      if (!b) return;
+      dash.setParams({ chart: b.dataset.chart });
+      show('chart');
+      dash.setLink('chart');
+      window.scrollTo(0, 0);
+    });
+    document.querySelectorAll('#chart-select').forEach((s) => {
+      s.addEventListener('change', () => dash.setParams({ chart: s.value || null }));
+    });
+
+    // 오늘 탭의 "일일 정리 전체 보기"
+    document.querySelectorAll('#open-daily').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const src = document.querySelector('[data-draw="today-summary"]');
+        const doc = src && src.dataset.doc;
+        if (doc) dash.setParams({ doc });
+        show('journal');
+        dash.setLink('journal');
+        window.scrollTo(0, 0);
+      });
+    });
+
+    document.querySelectorAll('.cn-sort').forEach((b) => {
+      b.addEventListener('click', () => dash.setParams({ [b.dataset.param || 'fsort']: b.dataset.sort }));
+    });
+    document.querySelectorAll('#doc-select').forEach((s) => {
+      s.addEventListener('change', () => dash.setParams({ doc: s.value || null }));
+    });
+    document.querySelectorAll('#month-select').forEach((s) => {
+      s.addEventListener('change', () => dash.setParams({ month: s.value || null }));
+    });
+  })();
+</script>
+
+<script>
+  // 오늘 탭
+  (() => {
+    const { eok, eokAbs, pct, tone, rowsOf, cell, nameCell, streak, settle } = window.cn;
+    const meta = () => (rowsOf('today', 'meta') || [])[0];
+
+    const metaText = (name, field) => dash.draw(name, (el) => {
+      const d = dash.data('today');
+      settle(el, d.status);
+      const m = meta();
+      el.textContent = m && m[field] != null ? String(m[field]) : '—';
+    });
+    metaText('day-label', 'day_label');
+    metaText('n-feat', 'n_features');
+    metaText('n-organ', 'n_organ');
+    metaText('n-week', 'n_week');
+    metaText('n-month', 'n_month');
+    metaText('flow-label', 'flow_label');
+
+    const metaLine = (name, fn) => dash.draw(name, (el) => {
+      settle(el, dash.data('today').status);
+      const m = meta();
+      el.textContent = m ? fn(m) : '—';
+    });
+    metaLine('feature-basis', (m) => m.flow_label + ' 선별');
+    metaLine('week-count', (m) => m.n_week + '종목');
+    metaLine('month-count', (m) => m.n_month + '종목');
+    const groupNote = (range, days) => '최근 ' + days + '거래일(' + range + ') 기준, 횟수 많은 순입니다. 등락률과 외국인·기관은 선정된 날만이 아니라 이 기간 전체 값입니다. "오늘"은 오늘의 특징주에도 든 종목입니다.';
+    metaLine('week-note', (m) => groupNote(m.week_range, 5));
+    metaLine('month-note', (m) => groupNote(m.month_range, 20));
+
+    dash.draw('today-summary', (el) => {
+      const d = dash.data('journal');
+      settle(el, d.status);
+      if (d.status !== 'ok') { el.textContent = '—'; return; }
+      // 아침 브리핑과 저녁 일일 정리 중 더 최근 것
+      const key = (r) => r.date + (r.kind === 'daily' ? 'T21' : 'T08');
+      const latest = d.data.filter((r) => r.kind === 'daily' || r.kind === 'morning')
+        .sort((a, b) => (key(a) < key(b) ? 1 : -1))[0];
+      if (!latest) { el.textContent = '아직 정리가 없습니다.'; return; }
+      const m = String(latest.text || '').match(/##\s*1\.\s*한 줄 요약[^\n]*\n+([^\n]+)/);
+      el.textContent = (m ? m[1].trim() : '') + ' (' + latest.date.slice(5).replace('-', '/') +
+        (latest.kind === 'morning' ? ' 아침' : ' 저녁') + ')';
+      el.dataset.doc = latest.id;
+    });
+
+    dash.draw('pick-sentence', (el) => {
+      const m = meta();
+      const stale = m ? Boolean(m.stale) : true;
+      el.closest('.cn-lede')?.querySelectorAll('.cn-sentence').forEach((s) => {
+        s.hidden = (s.dataset.when === 'stale') !== stale;
+      });
+      el.textContent = '';
+    });
+
+    dash.draw('market-rows', (tb) => {
+      const rows = rowsOf('today', 'market');
+      tb.replaceChildren();
+      if (!rows) return;
+      const max = d3.max(rows, (r) => d3.max([r.indiv, r.foreign, r.organ], (v) => Math.abs(v || 0))) || 1;
+      rows.forEach((r) => {
+        const tr = document.createElement('tr');
+        tr.dataset.key = r.id;
+        cell(tr, r.market, 'l');
+        ['indiv', 'foreign', 'organ'].forEach((k) => {
+          const td = cell(tr, eok(r[k]), tone(r[k]));
+          const bar = document.createElement('div');
+          bar.className = 'cn-flowbar';
+          const i = document.createElement('i');
+          const w = (Math.abs(r[k] || 0) / max) * 50;
+          i.style.width = w + '%';
+          i.style.left = r[k] >= 0 ? '50%' : 50 - w + '%';
+          i.style.background = r[k] >= 0 ? 'var(--cn-up)' : 'var(--cn-down)';
+          bar.append(i);
+          td.append(bar);
+        });
+        tb.append(tr);
+      });
+    });
+
+    // 머리글 정렬 공통: order는 기본 순서, 나머지는 큰 순서
+    const sortedRows = (tb, rows, key) => {
+      tb.closest('table')?.querySelectorAll('th').forEach((th) => {
+        const b = th.querySelector('.cn-sort');
+        if (b && b.dataset.sort === key) th.setAttribute('aria-sort', 'descending');
+        else th.removeAttribute('aria-sort');
+      });
+      if (!rows) return [];
+      return key === 'order'
+        ? rows.slice().sort((a, b) => a.order - b.order)
+        : rows.slice().sort((a, b) => (b[key] ?? -Infinity) - (a[key] ?? -Infinity));
+    };
+    // 횟수 칸: 분류 기준을 넘으면 진하게
+    const hitCell = (tr, n, min) => cell(tr, n ? n + '회' : '—', n >= min ? 'cn-strong' : 'cn-mute');
+
+    const SORTS = ['order', 'chg_pct', 'value_eok', 'foreign_eok', 'organ_eok', 'foreign_5d_eok', 'week_hits', 'month_hits'];
+    dash.draw('feature-rows', (tb) => {
+      const rows = rowsOf('today', 'feature');
+      tb.replaceChildren();
+      const key = SORTS.includes(dash.params().fsort) ? dash.params().fsort : 'order';
+      sortedRows(tb, rows, key).forEach((r) => {
+        const tr = document.createElement('tr');
+        tr.dataset.key = r.id;
+        const td = document.createElement('td');
+        td.className = 'c';
+        if (r.with_organ) {
+          const s = document.createElement('span');
+          s.className = 'cn-badge';
+          s.textContent = '◎';
+          td.append(s);
+        }
+        tr.append(td);
+        nameCell(tr, r);
+        cell(tr, r.market, 'cn-hide-sm');
+        cell(tr, pct(r.chg_pct), tone(r.chg_pct));
+        cell(tr, eokAbs(r.value_eok));
+        cell(tr, r.v_rank ? r.v_rank + '위' : '—', 'cn-hide-sm cn-mute');
+        cell(tr, eok(r.foreign_eok), tone(r.foreign_eok));
+        cell(tr, r.f_rank ? r.f_rank + '위' : '—', 'cn-hide-sm cn-mute');
+        cell(tr, eok(r.organ_eok), tone(r.organ_eok));
+        cell(tr, r.o_rank ? r.o_rank + '위' : '—', 'cn-hide-sm cn-mute');
+        cell(tr, eok(r.foreign_5d_eok), 'cn-hide-sm ' + tone(r.foreign_5d_eok));
+        cell(tr, streak(r.foreign_streak), 'cn-hide-sm ' + tone(r.foreign_streak));
+        cell(tr, streak(r.organ_streak), 'cn-hide-sm ' + tone(r.organ_streak));
+        hitCell(tr, r.week_hits, 2);
+        hitCell(tr, r.month_hits, 5);
+        tb.append(tr);
+      });
+    });
+
+    // 1주일 2회 이상 / 1달 5회 이상
+    const groupRows = (name, kind, param, sorts, first, second) => dash.draw(name, (tb) => {
+      const rows = rowsOf('today', kind);
+      tb.replaceChildren();
+      const key = sorts.includes(dash.params()[param]) ? dash.params()[param] : 'order';
+      sortedRows(tb, rows, key).forEach((r) => {
+        const tr = document.createElement('tr');
+        tr.dataset.key = r.id;
+        nameCell(tr, r);
+        hitCell(tr, r[first[0]], first[1]);
+        hitCell(tr, r[second[0]], second[1]);
+        cell(tr, r.both_hits ? r.both_hits + '회' : '—', 'cn-hide-sm' + (r.both_hits ? '' : ' cn-mute'));
+        cell(tr, pct(r.period_ret, 1), tone(r.period_ret));
+        cell(tr, eok(r.period_foreign), tone(r.period_foreign));
+        cell(tr, eok(r.period_organ), 'cn-hide-sm ' + tone(r.period_organ));
+        const td = document.createElement('td');
+        if (r.is_latest) {
+          const s = document.createElement('span');
+          s.className = 'cn-badge';
+          s.textContent = '오늘';
+          td.append(s);
+        } else {
+          td.textContent = r.last_label;
+          td.className = 'cn-mute';
+        }
+        tr.append(td);
+        tb.append(tr);
+      });
+    });
+    const GROUP_SORTS = ['order', 'both_hits', 'period_ret', 'period_foreign', 'period_organ'];
+    groupRows('week-rows', 'week', 'wsort', [...GROUP_SORTS, 'month_hits'], ['week_hits', 2], ['month_hits', 5]);
+    groupRows('month-rows', 'month', 'msort', [...GROUP_SORTS, 'week_hits'], ['month_hits', 5], ['week_hits', 2]);
+
+    const moveRows = (name, kind) => dash.draw(name, (tb) => {
+      const rows = rowsOf('today', kind);
+      tb.replaceChildren();
+      if (!rows) return;
+      rows.forEach((r) => {
+        const tr = document.createElement('tr');
+        tr.dataset.key = r.id;
+        nameCell(tr, r);
+        cell(tr, pct(r.chg_pct), tone(r.chg_pct));
+        cell(tr, eokAbs(r.value_eok));
+        cell(tr, r.vol_ratio == null ? '—' : r.vol_ratio.toFixed(1) + '배');
+        cell(tr, eok(r.foreign_eok), 'cn-hide-sm ' + tone(r.foreign_eok));
+        cell(tr, eok(r.organ_eok), 'cn-hide-sm ' + tone(r.organ_eok));
+        tb.append(tr);
+      });
+    });
+    moveRows('surge-rows', 'surge');
+    moveRows('mover-rows', 'mover');
+  })();
+</script>
+
+<script>
+  // 특징주 6개월 점검 탭
+  (() => {
+    const { pct, tone, rowsOf, cell, nameCell, settle } = window.cn;
+    const byId = (id) => {
+      const d = dash.data('history');
+      return d.status === 'ok' ? d.data.find((r) => r.id === id) : null;
+    };
+    const textDraw = (name, id, field, fmt) => dash.draw(name, (el) => {
+      settle(el, dash.data('history').status);
+      const r = byId(id);
+      el.textContent = r && r[field] != null ? fmt(r[field]) : '—';
+    });
+    textDraw('h-period', 'meta', 'period_label', String);
+    textDraw('h-days', 'meta', 'n_days', (v) => d3.format(',')(v));
+    textDraw('h-nsel', 'meta', 'n_sel', (v) => d3.format(',')(v));
+    textDraw('h-all5', 'summary-all-5', 'avg', (v) => pct(v));
+    textDraw('h-all5win', 'summary-all-5', 'win', (v) => v + '%');
+    textDraw('h-mkt5', 'market-5', 'avg', (v) => pct(v));
+    textDraw('y-period', 'meta', 'year_period_label', String);
+    textDraw('y-nsel', 'meta', 'year_n_sel', (v) => d3.format(',')(v));
+    textDraw('y-all5', 'ysum-all-5', 'avg', (v) => pct(v));
+    textDraw('y-all5win', 'ysum-all-5', 'win', (v) => v + '%');
+    textDraw('y-mkt5', 'ymarket-5', 'avg', (v) => pct(v));
+
+    // 가장 자주 뽑힌 종목: 6개월 / 1년
+    const fperiod = () => (dash.params().fperiod === '1y' ? '1y' : '6m');
+    document.querySelectorAll('[data-fperiod]').forEach((b) => {
+      b.addEventListener('click', () => dash.setParams({ fperiod: b.dataset.fperiod }));
+    });
+    dash.draw('frequent-note', (el) => {
+      document.querySelectorAll('[data-fperiod]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.fperiod === fperiod())));
+      const m = byId('meta');
+      const label = fperiod() === '1y' ? (m && m.year_period_label) : (m && m.period_label);
+      el.textContent = (fperiod() === '1y' ? '1년' : '6개월') + (label ? '(' + label + ')' : '') +
+        ' 동안 선정 횟수 상위 40. "5일 뒤"는 선정될 때마다의 평균.';
+    });
+
+    // 가로 막대 (0 기준 좌우)
+    const hbar = (el, rows) => {
+      el.replaceChildren();
+      if (!rows || !rows.length) return;
+      const w = Math.max(280, el.clientWidth || 320);
+      const rowH = 30;
+      const top = 6;
+      const h = rows.length * rowH + top * 2;
+      const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${w} ${h}`)
+        .attr('role', 'img').attr('aria-label', '구간별 5일 뒤 평균 수익률');
+      const probe = svg.append('text').attr('font-size', 12);
+      let lw = 0;
+      rows.forEach((r) => { probe.text(r.label); lw = Math.max(lw, probe.node().getComputedTextLength()); });
+      let vw = 0;
+      rows.forEach((r) => { probe.text(pct(r.r5)); vw = Math.max(vw, probe.node().getComputedTextLength()); });
+      probe.remove();
+      const x0 = lw + 10;
+      const x1 = w - vw - 10;
+      const ext = d3.extent([0, ...rows.map((r) => r.r5)]);
+      const x = d3.scaleLinear(ext, [x0, x1]).nice();
+      const g = svg.append('g');
+      rows.forEach((r, i) => {
+        const y = top + i * rowH;
+        const v = r.r5;
+        g.append('text').attr('x', x0 - 8).attr('y', y + rowH / 2).attr('dy', '0.35em').attr('text-anchor', 'end')
+          .attr('font-size', 12).style('fill', 'var(--color-fg)').text(r.label);
+        g.append('rect').attr('x', Math.min(x(0), x(v))).attr('y', y + 6).attr('height', rowH - 12)
+          .attr('width', Math.max(1, Math.abs(x(v) - x(0)))).attr('rx', 3)
+          .style('fill', v >= 0 ? 'var(--cn-up)' : 'var(--cn-down)');
+        g.append('text').attr('x', x1 + 6).attr('y', y + rowH / 2).attr('dy', '0.35em').attr('font-size', 12)
+          .style('fill', 'var(--color-fg-muted)').style('font-variant-numeric', 'tabular-nums').text(pct(v));
+      });
+      svg.append('line').attr('x1', x(0)).attr('x2', x(0)).attr('y1', 0).attr('y2', h)
+        .style('stroke', 'var(--cds-chart-reference)').attr('stroke-width', 1);
+    };
+    dash.draw('cond-chg', (el) => {
+      const rows = rowsOf('history', 'condition');
+      hbar(el, rows && rows.filter((r) => r.group === '선정일 등락률'));
+    });
+    dash.draw('cond-int', (el) => {
+      const rows = rowsOf('history', 'condition');
+      hbar(el, rows && rows.filter((r) => r.group === '외국인 순매수 ÷ 거래대금'));
+    });
+
+    dash.draw('summary-rows', (tb) => {
+      const rows = rowsOf('history', 'summary');
+      tb.replaceChildren();
+      if (!rows) return;
+      rows.forEach((r) => {
+        const tr = document.createElement('tr');
+        tr.dataset.key = r.id;
+        cell(tr, r.group, 'l');
+        cell(tr, r.horizon + '일 뒤');
+        cell(tr, d3.format(',')(r.n), 'cn-hide-sm cn-mute');
+        cell(tr, pct(r.avg), tone(r.avg));
+        cell(tr, pct(r.median), 'cn-hide-sm ' + tone(r.median));
+        cell(tr, r.win + '%');
+        cell(tr, pct(r.excess) + 'p', tone(r.excess));
+        cell(tr, r.beat + '%', 'cn-hide-sm');
+        tb.append(tr);
+      });
+    });
+
+    dash.draw('cond-rows', (tb) => {
+      const rows = rowsOf('history', 'condition');
+      tb.replaceChildren();
+      if (!rows) return;
+      rows.forEach((r) => {
+        const tr = document.createElement('tr');
+        tr.dataset.key = r.id;
+        cell(tr, r.group, 'l cn-mute');
+        cell(tr, r.label, 'l');
+        cell(tr, d3.format(',')(r.n), 'cn-hide-sm cn-mute');
+        cell(tr, pct(r.r1), tone(r.r1));
+        cell(tr, pct(r.r5), tone(r.r5));
+        cell(tr, pct(r.r20), tone(r.r20));
+        cell(tr, r.win5 == null ? '—' : r.win5 + '%', 'cn-hide-sm');
+        tb.append(tr);
+      });
+    });
+
+    dash.draw('frequent-rows', (tb) => {
+      const rows = rowsOf('history', fperiod() === '1y' ? 'frequent_1y' : 'frequent');
+      tb.replaceChildren();
+      if (!rows) return;
+      rows.forEach((r) => {
+        const tr = document.createElement('tr');
+        tr.dataset.key = r.id;
+        nameCell(tr, r);
+        cell(tr, r.count + '회');
+        cell(tr, r.with_organ + '회', 'cn-mute');
+        cell(tr, r.last ? r.last.slice(4, 6) + '/' + r.last.slice(6) : '—', 'cn-hide-sm cn-mute');
+        cell(tr, pct(r.avg_r5), tone(r.avg_r5));
+        tb.append(tr);
+      });
+    });
+
+    dash.draw('daily-chart', (el) => {
+      el.replaceChildren();
+      const rows = rowsOf('history', 'day');
+      if (!rows || !rows.length) return;
+      const data = rows.map((r) => ({ ...r, d: new Date(r.date + 'T00:00:00Z') }));
+      const w = Math.max(300, el.clientWidth || 600);
+      const h = 220;
+      const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${w} ${h}`)
+        .attr('role', 'img').attr('aria-label', '날짜별 특징주 수');
+      const yMax = d3.max(data, (r) => r.n) || 1;
+      const probe = svg.append('text').attr('font-size', 11).text(String(yMax));
+      const left = probe.node().getComputedTextLength() + 10;
+      probe.remove();
+      const m = { top: 8, right: 8, bottom: 24, left };
+      const x = d3.scaleBand(data.map((r) => r.date), [m.left, w - m.right]).paddingInner(0.2);
+      const y = d3.scaleLinear([0, yMax], [h - m.bottom, m.top]).nice();
+      const ticks = y.ticks(4);
+      svg.append('g').selectAll('line').data(ticks).join('line')
+        .attr('x1', m.left).attr('x2', w - m.right).attr('y1', (t) => y(t)).attr('y2', (t) => y(t))
+        .style('stroke', 'var(--cds-chart-grid)').attr('stroke-width', 1);
+      svg.append('g').selectAll('text').data(ticks).join('text')
+        .attr('x', m.left - 6).attr('y', (t) => y(t)).attr('dy', '0.35em').attr('text-anchor', 'end').attr('font-size', 11)
+        .style('fill', 'var(--color-fg-muted)').text((t) => t);
+      const bw = Math.min(32, x.bandwidth());
+      const off = (x.bandwidth() - bw) / 2;
+      svg.append('g').selectAll('rect').data(data).join('rect')
+        .attr('x', (r) => x(r.date) + off).attr('width', bw).attr('y', (r) => y(r.n)).attr('height', (r) => y(0) - y(r.n))
+        .attr('rx', Math.min(2, bw / 2)).style('fill', 'var(--cds-chart-muted)');
+      svg.append('g').selectAll('rect').data(data).join('rect')
+        .attr('x', (r) => x(r.date) + off).attr('width', bw).attr('y', (r) => y(r.n_organ)).attr('height', (r) => y(0) - y(r.n_organ))
+        .attr('rx', Math.min(2, bw / 2)).style('fill', 'var(--cn-organ)');
+      const fmt = d3.utcFormat('%m/%d');
+      const every = Math.max(1, Math.ceil(data.length / Math.max(2, Math.floor((w - m.left) / 64))));
+      svg.append('g').selectAll('text').data(data.filter((r, i) => i % every === 0)).join('text')
+        .attr('x', (r) => x(r.date) + x.bandwidth() / 2).attr('y', h - 6).attr('text-anchor', 'middle').attr('font-size', 11)
+        .style('fill', 'var(--color-fg-muted)').text((r) => fmt(r.d));
+      svg.append('line').attr('x1', m.left).attr('x2', w - m.right).attr('y1', y(0)).attr('y2', y(0))
+        .style('stroke', 'var(--cds-chart-axis)').attr('stroke-width', 1);
+      const tip = document.createElement('div');
+      tip.className = 'cn-tip';
+      tip.hidden = true;
+      el.append(tip);
+      const hover = svg.append('rect').attr('x', m.left).attr('y', m.top).attr('width', w - m.left - m.right)
+        .attr('height', h - m.top - m.bottom).style('fill', 'transparent');
+      hover.on('mousemove', (event) => {
+        const [px] = d3.pointer(event);
+        const i = Math.max(0, Math.min(data.length - 1, Math.floor((px - m.left) / x.step())));
+        const r = data[i];
+        tip.replaceChildren();
+        const t = document.createElement('div');
+        t.className = 't';
+        t.textContent = r.date;
+        const a = document.createElement('div');
+        a.textContent = '특징주 ' + r.n + '종목';
+        const b = document.createElement('div');
+        b.textContent = '◎ 동반 ' + r.n_organ + '종목';
+        tip.append(t, a, b);
+        tip.hidden = false;
+        const box = el.getBoundingClientRect();
+        const scale = box.width / w;
+        const cx = (x(r.date) + x.bandwidth() / 2) * scale;
+        const tw = tip.offsetWidth;
+        tip.style.left = Math.max(0, Math.min(box.width - tw, cx - tw / 2)) + 'px';
+        tip.style.top = '0px';
+      });
+      hover.on('mouseleave', () => { tip.hidden = true; });
+    });
+  })();
+</script>
+
+<script>
+  // 차트 탭: 6개월 일봉 + 5·20·60·120일선 + 거래대금 + 외국인·기관 순매수 + 겹친 날 표시
+  (() => {
+    const { eok, eokAbs, pct } = window.cn;
+    const GROUPS = [['market', '시장'], ['today', '오늘의 특징주'], ['week', '1주일 2회 이상'], ['month', '1달 5회 이상'], ['recent', '최근 5일 ◎'], ['surge', '거래 급증·급등'], ['watch', '관심종목'], ['mention', '채널 언급'], ['frequent', '자주 선정(6개월·1년)'], ['big', '시총 상위']];
+    const MA_COLORS = [[5, 'var(--cn-ma5)'], [20, 'var(--cn-ma20)'], [60, 'var(--cn-ma60)'], [120, 'var(--cn-ma120)']];
+    const charts = () => {
+      const d = dash.data('charts');
+      return d.status === 'ok' && d.data && d.data.series ? d.data : null;
+    };
+    const current = (c) => {
+      const want = dash.params().chart;
+      return c.series.find((s) => s.id === want) || c.series[0];
+    };
+    const missing = (c) => {
+      const want = dash.params().chart;
+      return want && !c.series.some((s) => s.id === want) ? want : null;
+    };
+
+    dash.draw('chart-select', (sel) => {
+      const c = charts();
+      sel.replaceChildren();
+      if (!c) return;
+      GROUPS.forEach(([g, label]) => {
+        const items = c.series.filter((s) => s.group === g);
+        if (!items.length) return;
+        const og = document.createElement('optgroup');
+        og.label = label;
+        items.forEach((s) => og.append(new Option(s.kind === 'market' ? s.name : s.name + ' (' + s.id + ')', s.id)));
+        sel.append(og);
+      });
+      sel.value = current(c).id;
+    });
+
+    dash.draw('chart-caption', (el) => {
+      const c = charts();
+      if (!c) { el.textContent = '—'; return; }
+      const miss = missing(c);
+      el.textContent = miss ? miss + ' 종목은 아직 차트 데이터가 없어 ' + current(c).name + '를 보여줍니다' : '갱신 ' + c.updated;
+    });
+
+    dash.draw('chart-flagnote', (el) => {
+      const c = charts();
+      if (!c) { el.textContent = '—'; return; }
+      el.textContent = current(c).kind === 'market'
+        ? '▲ 외국인·기관이 함께 순매수하고 거래대금이 20일 평균 이상이던 날. 시장 수급은 종목별 추정치를 더한 값(주식만)입니다.'
+        : '▲ ◎ 특징주로 뽑힌 날(거래대금 상위 100 ∩ 외국인 순매수 상위 200 ∩ 기관 순매수 상위 200), △ 외국인만 겹친 날.';
+    });
+
+    dash.draw('chart-holdnote', (el) => {
+      const c = charts();
+      el.textContent = '';
+      if (!c || current(c).kind === 'market') return;
+      const rows = current(c).rows.slice(-(c.window || 125));
+      const fh = rows.filter((r) => r[9] != null);
+      const oc = rows.filter((r) => r[10] != null);
+      if (!fh.length && !oc.length) return;
+      const p = (v) => pct(v).replace('%', '%p');
+      const parts = [];
+      if (fh.length) {
+        const a = fh[0];
+        const b = fh[fh.length - 1];
+        parts.push('외국인 보유율 ' + b[9].toFixed(2) + '%, ' + a[0].slice(4, 6) + '/' + a[0].slice(6) + ' 대비 ' + p(b[9] - a[9]) + '(네이버 실제값).');
+      }
+      if (oc.length) parts.push('기관은 보유 자료가 없어 이 구간 순매수 누적을 상장주식수로 나눈 추정 변화입니다: ' + p(oc[oc.length - 1][10]) + '.');
+      el.textContent = parts.join(' ');
+    });
+
+    dash.draw('chart-main', (el) => {
+      el.replaceChildren();
+      const c = charts();
+      if (!c) return;
+      const s = current(c);
+      const rows = s.rows;
+      const n = rows.length;
+      if (!n) return;
+      const win = Math.min(c.window || 125, n);
+      const closes = rows.map((r) => r[4]);
+      const maOf = (p) => closes.map((_, i) => (i + 1 >= p ? d3.mean(closes.slice(i + 1 - p, i + 1)) : null));
+      const MAS = MA_COLORS.map(([p, color]) => ({ p, color, v: maOf(p) }));
+      const vis = rows.slice(n - win).map((r, k) => ({
+        i: n - win + k, d: r[0], o: r[1], h: r[2], l: r[3], c: r[4], val: r[5], f: r[6], org: r[7], flag: r[8],
+        fh: r[9] ?? null, oc: r[10] ?? null,
+      }));
+      const hasHold = s.kind !== 'market' && vis.some((r) => r.fh != null || r.oc != null);
+      const W = Math.max(320, el.clientWidth || 800);
+      const narrow = W < 560;
+      const H = (narrow ? 440 : 540) + (hasHold ? (narrow ? 90 : 110) : 0);
+      const fmtP = s.kind === 'market' ? d3.format(',.2f') : d3.format(',.0f');
+      const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`)
+        .attr('role', 'img').attr('aria-label', s.name + ' 최근 6개월 일봉 차트');
+      const lo = d3.min(vis, (r) => Math.min(r.l, ...MAS.map((a) => a.v[r.i] ?? Infinity)));
+      const hi = d3.max(vis, (r) => Math.max(r.h, ...MAS.map((a) => a.v[r.i] ?? -Infinity)));
+      // 오른쪽 여백은 가격과 순매수 눈금 중 가장 긴 글자에 맞춘다
+      const fmax = d3.max(vis, (r) => Math.max(Math.abs(r.f || 0), Math.abs(r.org || 0))) || 1;
+      const probe = svg.append('text').attr('font-size', 11);
+      const rightW = d3.max([fmtP(hi), eok(fmax), eok(-fmax)], (t) => { probe.text(t); return probe.node().getComputedTextLength(); });
+      const m = { top: 8, right: Math.ceil(rightW) + 14, bottom: 22, left: 4 };
+      probe.remove();
+      const gap = 14;
+      const inner = H - m.top - m.bottom - gap * (hasHold ? 3 : 2);
+      const hP = inner * (hasHold ? 0.49 : 0.58);
+      const hV = inner * (hasHold ? 0.12 : 0.15);
+      const hH = hasHold ? inner * 0.17 : 0;
+      const hF = inner - hP - hV - hH;
+      const yP0 = m.top;
+      const yV0 = yP0 + hP + gap;
+      const yF0 = yV0 + hV + gap;
+      const yH0 = yF0 + hF + gap;
+      const yEnd = hasHold ? yH0 + hH : yF0 + hF;
+      const x = d3.scaleBand(vis.map((r) => r.d), [m.left, W - m.right]).paddingInner(0.3);
+      const cx = (r) => x(r.d) + x.bandwidth() / 2;
+      const pad = (hi - lo) * 0.05 || hi * 0.01;
+      const y = d3.scaleLinear([lo - pad * 2, hi + pad], [yP0 + hP, yP0]);
+      const label = (xx, yy, text, anchor = 'start', color = 'var(--color-fg-muted)') => svg.append('text')
+        .attr('x', xx).attr('y', yy).attr('dy', '0.35em').attr('text-anchor', anchor).attr('font-size', 11)
+        .style('fill', color).style('font-variant-numeric', 'tabular-nums').text(text);
+
+      // 월 경계 세로선과 날짜
+      let lastMonth = vis[0].d.slice(0, 6);  // 구간 첫날은 달의 시작이 아닐 수 있어 표시하지 않는다
+      let lastX = -999;
+      vis.forEach((r) => {
+        const mo = r.d.slice(0, 6);
+        if (mo === lastMonth) return;
+        lastMonth = mo;
+        svg.append('line').attr('x1', x(r.d)).attr('x2', x(r.d)).attr('y1', yP0).attr('y2', yEnd)
+          .style('stroke', 'var(--cds-chart-grid)').attr('stroke-width', 1);
+        if (x(r.d) - lastX >= 44) {
+          label(x(r.d) + 2, H - 8, r.d.slice(2, 4) + '.' + r.d.slice(4, 6));
+          lastX = x(r.d);
+        }
+      });
+
+      // 가격 눈금
+      y.ticks(narrow ? 4 : 5).forEach((t) => {
+        if (t < y.domain()[0] || t > y.domain()[1]) return;
+        svg.append('line').attr('x1', m.left).attr('x2', W - m.right).attr('y1', y(t)).attr('y2', y(t))
+          .style('stroke', 'var(--cds-chart-grid)').attr('stroke-width', 1);
+        label(W - m.right + 6, y(t), fmtP(t));
+      });
+
+      // 캔들 (빨강 상승, 파랑 하락)
+      const bw = Math.max(1, Math.min(9, x.bandwidth()));
+      const gC = svg.append('g');
+      vis.forEach((r) => {
+        const col = r.c >= r.o ? 'var(--cn-up)' : 'var(--cn-down)';
+        gC.append('line').attr('x1', cx(r)).attr('x2', cx(r)).attr('y1', y(r.h)).attr('y2', y(r.l))
+          .style('stroke', col).attr('stroke-width', 1);
+        const top = y(Math.max(r.o, r.c));
+        const bot = y(Math.min(r.o, r.c));
+        gC.append('rect').attr('x', cx(r) - bw / 2).attr('width', bw).attr('y', top)
+          .attr('height', Math.max(1, bot - top)).style('fill', col);
+      });
+
+      // 이동평균선
+      MAS.forEach((a) => {
+        const line = d3.line().defined((r) => a.v[r.i] != null).x(cx).y((r) => y(a.v[r.i]));
+        svg.append('path').datum(vis).attr('d', line).style('fill', 'none').style('stroke', a.color)
+          .attr('stroke-width', 1.5).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round');
+      });
+
+      // 겹친 날 표시
+      vis.filter((r) => r.flag).forEach((r) => {
+        const yy = y(r.l) + 10;
+        const sz = r.flag === 1 ? 5 : 4;
+        svg.append('path')
+          .attr('d', `M${cx(r)},${yy - sz} L${cx(r) + sz},${yy + sz * 0.8} L${cx(r) - sz},${yy + sz * 0.8} Z`)
+          .style('fill', r.flag === 1 ? 'var(--cn-organ)' : 'none').style('stroke', 'var(--cn-organ)').attr('stroke-width', 1);
+      });
+
+      // 마지막 종가 표시
+      const last = vis[vis.length - 1];
+      const lastCol = last.c >= last.o ? 'var(--cn-up)' : 'var(--cn-down)';
+      svg.append('rect').attr('x', W - m.right + 2).attr('y', y(last.c) - 8).attr('width', m.right - 2).attr('height', 16)
+        .attr('rx', 3).style('fill', lastCol);
+      label(W - m.right + 6, y(last.c), fmtP(last.c), 'start', 'var(--color-panel)');
+
+      // 거래대금
+      const vmax = d3.max(vis, (r) => r.val || 0) || 1;
+      const yv = d3.scaleLinear([0, vmax], [yV0 + hV, yV0]);
+      vis.forEach((r) => {
+        if (!r.val) return;
+        svg.append('rect').attr('x', x(r.d)).attr('width', x.bandwidth()).attr('y', yv(r.val))
+          .attr('height', yV0 + hV - yv(r.val)).style('fill', r.c >= r.o ? 'var(--cn-up)' : 'var(--cn-down)').style('opacity', 0.45);
+      });
+      label(m.left + 2, yV0 + 4, '거래대금');
+      label(W - m.right + 6, yV0 + 4, eokAbs(vmax));
+
+      // 외국인·기관 순매수
+      const yf = d3.scaleLinear([-fmax, fmax], [yF0 + hF, yF0]);
+      svg.append('line').attr('x1', m.left).attr('x2', W - m.right).attr('y1', yf(0)).attr('y2', yf(0))
+        .style('stroke', 'var(--cds-chart-axis)').attr('stroke-width', 1);
+      const half = x.bandwidth() / 2;
+      vis.forEach((r) => {
+        [[r.f, 0, 'var(--cn-foreign)'], [r.org, half, 'var(--cn-inst)']].forEach(([v, off, col]) => {
+          if (!v) return;
+          svg.append('rect').attr('x', x(r.d) + off).attr('width', Math.max(0.6, half))
+            .attr('y', Math.min(yf(0), yf(v))).attr('height', Math.max(0.5, Math.abs(yf(v) - yf(0)))).style('fill', col);
+        });
+      });
+      label(m.left + 2, yF0 + 4, '외국인·기관 순매수');
+      label(W - m.right + 6, yF0 + 4, eok(fmax));
+      label(W - m.right + 6, yF0 + hF - 4, eok(-fmax));
+
+      // 외국인·기관 보유 비중 변화 (구간 시작 대비 %p). 외국인은 실제 보유율, 기관은 누적 순매수 추정
+      const holdBase = (vis.find((r) => r.fh != null) || {}).fh;
+      const fhChange = (r) => (r.fh == null ? null : r.fh - holdBase);
+      const pp = (v) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2) + 'p';
+      if (hasHold) {
+        const vals = vis.flatMap((r) => [fhChange(r), r.oc]).filter((v) => v != null);
+        const lowH = Math.min(0, d3.min(vals));
+        const highH = Math.max(0, d3.max(vals));
+        const padH = (highH - lowH) * 0.08 || 0.1;
+        const topH = highH + padH * 3;  // 위쪽을 넉넉히 비워 제목이 선과 겹치지 않게
+        const yh = d3.scaleLinear([lowH - padH, topH], [yH0 + hH, yH0]);
+        svg.append('line').attr('x1', m.left).attr('x2', W - m.right).attr('y1', yh(0)).attr('y2', yh(0))
+          .style('stroke', 'var(--cds-chart-axis)').attr('stroke-width', 1);
+        [[fhChange, 'var(--cn-foreign)'], [(r) => r.oc, 'var(--cn-inst)']].forEach(([get, col]) => {
+          const line = d3.line().defined((r) => get(r) != null).x(cx).y((r) => yh(get(r)));
+          svg.append('path').datum(vis).attr('d', line).style('fill', 'none').style('stroke', col)
+            .attr('stroke-width', 1.5).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round');
+        });
+        label(m.left + 2, yH0 + 4, '보유 비중 변화 (구간 시작 대비)');
+        label(W - m.right + 6, yH0 + 4, pp(topH));
+        label(W - m.right + 6, yH0 + hH - 4, pp(lowH - padH));
+      }
+
+      // 십자선과 값 풍선
+      const tip = document.createElement('div');
+      tip.className = 'cn-tip';
+      tip.hidden = true;
+      el.append(tip);
+      const vline = svg.append('line').attr('y1', yP0).attr('y2', yEnd).style('stroke', 'var(--cds-chart-reference)')
+        .attr('stroke-dasharray', '3,3').style('display', 'none');
+      const overlay = svg.append('rect').attr('x', m.left).attr('y', yP0).attr('width', W - m.left - m.right)
+        .attr('height', yEnd - yP0).style('fill', 'transparent');
+      const onMove = (event) => {
+        const [px] = d3.pointer(event, svg.node());
+        const k = Math.max(0, Math.min(vis.length - 1, Math.floor((px - m.left) / x.step())));
+        const r = vis[k];
+        vline.attr('x1', cx(r)).attr('x2', cx(r)).style('display', null);
+        tip.replaceChildren();
+        const add = (text, cls) => {
+          const dv = document.createElement('div');
+          if (cls) dv.className = cls;
+          dv.textContent = text;
+          tip.append(dv);
+        };
+        add(r.d.slice(0, 4) + '-' + r.d.slice(4, 6) + '-' + r.d.slice(6), 't');
+        const prev = rows[r.i - 1] ? rows[r.i - 1][4] : null;
+        add('종가 ' + fmtP(r.c) + (prev ? ' (' + pct((r.c / prev - 1) * 100) + ')' : ''));
+        add('시가 ' + fmtP(r.o) + ' · 고가 ' + fmtP(r.h) + ' · 저가 ' + fmtP(r.l));
+        if (r.val != null) add('거래대금 ' + eokAbs(r.val));
+        if (r.f != null) add('외국인 ' + eok(r.f) + ' · 기관 ' + eok(r.org));
+        if (r.fh != null) add('외국인 보유 ' + r.fh.toFixed(2) + '% (' + pp(fhChange(r)) + ')' + (r.oc != null ? ' · 기관 ' + pp(r.oc) + ' 추정' : ''));
+        add(MAS.map((a) => a.p + '일 ' + (a.v[r.i] != null ? fmtP(a.v[r.i]) : '—')).join(' · '));
+        if (r.flag === 1) add(s.kind === 'market' ? '▲ 동반 순매수 + 거래대금 증가' : '▲ ◎ 특징주');
+        else if (r.flag === 2) add('△ 외국인만 특징주');
+        tip.hidden = false;
+        const box = el.getBoundingClientRect();
+        const xp = cx(r) * (box.width / W);
+        const tw = tip.offsetWidth;
+        const left = xp + 14 + tw > box.width ? xp - tw - 14 : xp + 14;
+        tip.style.left = Math.max(0, left) + 'px';
+        tip.style.top = '4px';
+      };
+      overlay.on('pointermove', onMove).on('pointerdown', onMove);
+      overlay.on('pointerleave', () => { tip.hidden = true; vline.style('display', 'none'); });
+    });
+  })();
+</script>
+
+<script>
+  // 일지·텔레그램 탭
+  (() => {
+    const { rowsOf, cell, nameCell, settle } = window.cn;
+    const safeChannel = (c) => (typeof c === 'string' && /^[A-Za-z0-9_]{3,64}$/.test(c) ? c : null);
+
+    const inline = (parent, text, channel) => {
+      const re = /(\*\*[^*]+\*\*|`[^`]+`|#\d{3,6})/g;
+      let last = 0;
+      let m;
+      while ((m = re.exec(text))) {
+        if (m.index > last) parent.append(text.slice(last, m.index));
+        const tok = m[0];
+        if (tok.startsWith('**')) {
+          const b = document.createElement('b');
+          inline(b, tok.slice(2, -2), channel);
+          parent.append(b);
+        } else if (tok.startsWith('`')) {
+          const c = document.createElement('code');
+          c.textContent = tok.slice(1, -1);
+          parent.append(c);
+        } else if (channel) {
+          const a = document.createElement('a');
+          a.href = 'https://t.me/' + channel + '/' + tok.slice(1);
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.textContent = tok;
+          parent.append(a);
+        } else {
+          parent.append(tok);
+        }
+        last = m.index + tok.length;
+      }
+      if (last < text.length) parent.append(text.slice(last));
+    };
+
+    const renderMd = (el, text, channel) => {
+      el.replaceChildren();
+      const lines = String(text || '').replace(/\r/g, '').split('\n');
+      const sep = /^\s*\|(\s*:?-{2,}:?\s*\|)+\s*$/;
+      const cells = (r) => r.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((s) => s.trim());
+      let list = null;
+      let para = null;
+      let inFence = false;
+      let i = 0;
+      while (i < lines.length) {
+        const line = lines[i];
+        if (/^\s*```/.test(line)) { inFence = !inFence; list = null; para = null; i++; continue; }
+        if (inFence) {
+          const pre = document.createElement('pre');
+          pre.textContent = line;
+          el.append(pre);
+          i++;
+          continue;
+        }
+        if (/^\s*$/.test(line)) { list = null; para = null; i++; continue; }
+        const h = line.match(/^(#{1,4})\s+(.*)$/);
+        if (h) {
+          list = null; para = null;
+          const e = document.createElement('h' + Math.min(h[1].length + 1, 5));
+          inline(e, h[2], channel);
+          el.append(e);
+          i++;
+          continue;
+        }
+        if (/^\s*\|/.test(line)) {
+          list = null; para = null;
+          const rows = [];
+          while (i < lines.length && /^\s*\|/.test(lines[i])) { rows.push(lines[i]); i++; }
+          const data = rows.filter((r) => !sep.test(r));
+          const wrap = document.createElement('div');
+          wrap.className = 'cn-scroll';
+          const t = document.createElement('table');
+          t.className = 'cn-mdtable';
+          if (data.length) {
+            const thead = document.createElement('thead');
+            const trh = document.createElement('tr');
+            cells(data[0]).forEach((c) => { const th = document.createElement('th'); inline(th, c, channel); trh.append(th); });
+            thead.append(trh);
+            const tb = document.createElement('tbody');
+            data.slice(1).forEach((r) => {
+              const tr = document.createElement('tr');
+              cells(r).forEach((c) => { const td = document.createElement('td'); inline(td, c, channel); tr.append(td); });
+              tb.append(tr);
+            });
+            t.append(thead, tb);
+          }
+          wrap.append(t);
+          el.append(wrap);
+          continue;
+        }
+        const b = line.match(/^(\s*)[-*]\s+(.*)$/);
+        const n = line.match(/^(\s*)\d+[.)]\s+(.*)$/);
+        const it = b || n;
+        if (it) {
+          const tag = b ? 'ul' : 'ol';
+          if (!list || list.tagName.toLowerCase() !== tag) {
+            list = document.createElement(tag);
+            el.append(list);
+          }
+          para = null;
+          const li = document.createElement('li');
+          if (it[1].length >= 2) li.className = 'cn-sub';
+          inline(li, it[2], channel);
+          list.append(li);
+          i++;
+          continue;
+        }
+        if (!para) {
+          para = document.createElement('p');
+          el.append(para);
+          list = null;
+        } else {
+          para.append(document.createElement('br'));
+        }
+        inline(para, line.trim(), channel);
+        i++;
+      }
+    };
+
+    const docs = () => {
+      const d = dash.data('journal');
+      if (d.status !== 'ok') return null;
+      const key = (r) => r.date + (r.kind === 'daily' ? 'T21' : 'T08');
+      const daily = d.data.filter((r) => r.kind === 'daily').sort((a, b) => (a.date < b.date ? 1 : -1));
+      const morning = d.data.filter((r) => r.kind === 'morning').sort((a, b) => (a.date < b.date ? 1 : -1));
+      const notes = [...daily, ...morning].sort((a, b) => (key(a) < key(b) ? 1 : -1));
+      const digests = d.data.filter((r) => r.kind === 'digest').sort((a, b) => (a.period > b.period ? 1 : -1));
+      const profiles = d.data.filter((r) => r.kind === 'channel' && r.profile);
+      return { daily, morning, digests, profiles, all: [...notes, ...digests, ...profiles] };
+    };
+
+    dash.draw('doc-select', (sel) => {
+      const ds = docs();
+      sel.replaceChildren();
+      if (!ds) return;
+      const group = (label, rows, text) => {
+        if (!rows.length) return;
+        const g = document.createElement('optgroup');
+        g.label = label;
+        rows.forEach((r) => g.append(new Option(text(r), r.id)));
+        sel.append(g);
+      };
+      group('칠호 일일 정리 (저녁)', ds.daily, (r) => r.date + ' 일일 정리');
+      group('칠호 아침 브리핑', ds.morning, (r) => r.date + ' 아침 브리핑');
+      group('텔레그램 월별 정리', ds.digests, (r) => '@' + r.channel + ' ' + r.period);
+      group('채널 프로필', ds.profiles, (r) => '@' + r.username + ' 프로필');
+      const want = dash.params().doc;
+      sel.value = ds.all.some((r) => r.id === want) ? want : (ds.all[0] ? ds.all[0].id : '');
+    });
+
+    dash.draw('doc-view', (el) => {
+      const ds = docs();
+      el.replaceChildren();
+      if (!ds || !ds.all.length) return;
+      const want = dash.params().doc;
+      const r = ds.all.find((x) => x.id === want) || ds.all[0];
+      const text = r.kind === 'channel' ? r.profile : r.text;
+      renderMd(el, text, safeChannel(r.channel || r.username));
+    });
+
+    dash.draw('channel-list', (el) => {
+      el.replaceChildren();
+      const rows = rowsOf('journal', 'channel');
+      if (!rows) return;
+      rows.forEach((r) => {
+        const box = document.createElement('div');
+        box.className = 'cn-channel';
+        const t = document.createElement('strong');
+        t.textContent = r.title + ' (@' + r.username + ')';
+        const meta = document.createElement('span');
+        meta.className = 'cn-note';
+        meta.textContent = '전체 글 ' + d3.format(',')(r.posts) + '건 · ' + (r.first || '—') + ' ~ ' + (r.last || '—') +
+          ' · 월별 정리 ' + r.digested + '개월';
+        const memo = document.createElement('span');
+        memo.className = 'cn-note';
+        memo.textContent = r.memo || '';
+        box.append(t, meta, memo);
+        el.append(box);
+      });
+    });
+
+    const months = () => {
+      const rows = rowsOf('journal', 'mention');
+      if (!rows) return null;
+      return [...new Set(rows.map((r) => r.month))].sort().reverse();
+    };
+    dash.draw('month-select', (sel) => {
+      const ms = months();
+      sel.replaceChildren();
+      if (!ms) return;
+      ms.forEach((m) => sel.append(new Option(m.replace('-', '년 ') + '월', m)));
+      const want = dash.params().month;
+      sel.value = ms.includes(want) ? want : (ms[0] || '');
+    });
+    dash.draw('mention-rows', (tb) => {
+      tb.replaceChildren();
+      const rows = rowsOf('journal', 'mention');
+      const ms = months();
+      if (!rows || !ms || !ms.length) return;
+      const want = dash.params().month;
+      const month = ms.includes(want) ? want : ms[0];
+      rows.filter((r) => r.month === month).sort((a, b) => a.rank - b.rank).forEach((r) => {
+        const tr = document.createElement('tr');
+        tr.dataset.key = r.id;
+        cell(tr, String(r.rank), 'l cn-mute');
+        nameCell(tr, r);
+        cell(tr, d3.format(',')(r.count));
+        tb.append(tr);
+      });
+    });
+  })();
+</script>
+
+</div>
+
+<footer class="sf-foot">
+  <span id="sf-built">—</span>
+  <button class="sf-btn" type="button" id="sf-lock">이 기기에서 잠그기</button>
+</footer>
+
+<script>
+  // 비밀번호 확인 → 데이터 복호화 → 본문 그리기
+  (async () => {
+    const FILES = ['today', 'history', 'journal'];
+    const gate = document.getElementById('sf-gate');
+    const form = document.getElementById('sf-form');
+    const pw = document.getElementById('sf-pw');
+    const msg = (t) => { document.getElementById('sf-msg').textContent = t; };
+    const fromB64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+    const toB64 = (u8) => btoa(String.fromCharCode(...u8));
+    const enc = new TextEncoder();
+    const dec = new TextDecoder();
+    let meta;
+    try {
+      meta = await (await fetch('data/meta.json', { cache: 'no-store' })).json();
+    } catch (e) {
+      document.body.classList.remove('sf-locked');
+      gate.hidden = false;
+      msg('데이터를 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요.');
+      return;
+    }
+    if (meta.built) document.getElementById('sf-built').textContent = '마지막 갱신 ' + meta.built;
+    if (meta.preview) {
+      // 로컬 점검용 미리보기 빌드에만 있는 경로 (배포본의 meta에는 preview가 없다)
+      gate.hidden = true;
+      document.body.classList.remove('sf-locked');
+      window.__chilhoLoad = async (id) => {
+        try { window.dash._set(id, await (await fetch('data/' + id + '.plain.json')).json()); } catch (e) { window.dash._fail(id); }
+      };
+      await Promise.all(FILES.map((id) => window.__chilhoLoad(id)));
+      window.dash._rerun();
+      return;
+    }
+    const KEY_STORE = 'chilho-key-' + meta.salt.slice(0, 8);
+    const decrypt = async (key, box) =>
+      dec.decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(box.iv) }, key, fromB64(box.ct)));
+    const keyOk = async (key) => {
+      try { return (await decrypt(key, meta.check)) === 'chilho-ok'; } catch (e) { return false; }
+    };
+    const deriveKey = async (pass) => {
+      const base = await crypto.subtle.importKey('raw', enc.encode(pass), 'PBKDF2', false, ['deriveKey']);
+      return crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt: fromB64(meta.salt), iterations: meta.iter, hash: 'SHA-256' },
+        base, { name: 'AES-GCM', length: 256 }, true, ['decrypt']);
+    };
+    // 데이터 파일: 앞 12바이트 IV + gzip으로 압축한 JSON의 암호문
+    const readSealed = async (key, id) => {
+      const raw = new Uint8Array(await (await fetch('data/' + id + '.bin', { cache: 'no-store' })).arrayBuffer());
+      const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: raw.slice(0, 12) }, key, raw.slice(12));
+      return new Response(new Blob([plain]).stream().pipeThrough(new DecompressionStream('gzip'))).json();
+    };
+    const open = async (key) => {
+      gate.hidden = true;
+      document.body.classList.remove('sf-locked');
+      window.__chilhoLoad = async (id) => {
+        try {
+          window.dash._set(id, await readSealed(key, id));
+        } catch (e) {
+          console.error(id, e);
+          window.dash._fail(id);
+        }
+      };
+      await Promise.all(FILES.map((id) => window.__chilhoLoad(id)));
+      window.dash._rerun();
+    };
+    document.getElementById('sf-lock').addEventListener('click', () => {
+      try { localStorage.removeItem(KEY_STORE); } catch (e) { /* 무시 */ }
+      location.reload();
+    });
+    try {
+      const raw = localStorage.getItem(KEY_STORE);
+      if (raw) {
+        const key = await crypto.subtle.importKey('raw', fromB64(raw), 'AES-GCM', true, ['decrypt']);
+        if (await keyOk(key)) { await open(key); return; }
+      }
+    } catch (e) { /* 저장된 열쇠 없음 */ }
+    document.body.classList.remove('sf-locked');
+    document.getElementById('dash-root').style.visibility = 'hidden';
+    gate.hidden = false;
+    pw.focus();
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      msg('여는 중…');
+      const key = await deriveKey(pw.value);
+      if (!(await keyOk(key))) { msg('비밀번호가 맞지 않습니다.'); return; }
+      try { localStorage.setItem(KEY_STORE, toB64(new Uint8Array(await crypto.subtle.exportKey('raw', key)))); } catch (e) { /* 무시 */ }
+      pw.value = '';
+      msg('');
+      document.getElementById('dash-root').style.visibility = '';
+      await open(key);
+    });
+  })();
+</script>
+</body>
+</html>
